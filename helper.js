@@ -19,11 +19,11 @@ class TokenManager {
       headers: await getHeaders(process.env.GITHUB_TOKEN),
     };
 
-    console.debug(`refreshing token`, options);
+    console.debug(`refreshing token`);
     try {
       const resp = await axios(options);
       const data = resp.data;
-      console.debug(`token set: ${data.token}`);
+      console.info("token response", data);
       // console.info(data);
       this.token = data.token;
       this.expiry = data.expires_at * 1000;
