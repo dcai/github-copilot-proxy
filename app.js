@@ -1,12 +1,9 @@
-require("dotenv").config();
-const express = require("express");
-const axios = require("axios");
-const tokenManager = require("./token");
-const {
-  EDITOR_VERSION,
-  USER_AGENT,
-  EDITOR_PLUGIN_VERSION,
-} = require("./config");
+import dotenv from "dotenv";
+import express from "express";
+import axios from "axios";
+import { getHeaders } from "./helper.js";
+
+dotenv.config();
 
 const app = express();
 const port = process.env.GHC_PORT || 7890;
@@ -15,17 +12,10 @@ const host = process.env.GHC_HOST || "0.0.0.0";
 app.use(express.json());
 
 app.get("/v1/models", async (_req, res) => {
-  const copilotToken = await tokenManager.getToken();
   const options = {
     method: "GET",
     url: "https://api.githubcopilot.com/models",
-    headers: {
-      authorization: `Bearer ${copilotToken}`,
-      "content-type": "application/json",
-      "editor-version": EDITOR_VERSION,
-      "user-agent": USER_AGENT,
-      "editor-plugin-version": EDITOR_PLUGIN_VERSION,
-    },
+    headers: await getHeaders(),
   };
   const response = await axios.request(options);
   return res.json(response.data);
@@ -34,28 +24,21 @@ app.get("/v1/models", async (_req, res) => {
 app.post("/v1/chat/completions", async (req, res) => {
   try {
     const payload = req.body;
-    const copilotToken = await tokenManager.getToken();
 
     const stream = payload?.stream || false;
     const options = {
       method: "POST",
       url: "https://api.githubcopilot.com/chat/completions",
-      headers: {
-        authorization: `Bearer ${copilotToken}`,
-        "content-type": "application/json",
-        "editor-version": EDITOR_VERSION,
-        "user-agent": USER_AGENT,
-        "editor-plugin-version": EDITOR_PLUGIN_VERSION,
-      },
+      headers: await getHeaders(),
       data: payload,
     };
     if (!stream) {
-      const response = await axios.request(options);
+      const response = await axios(options);
       return res.json(response.data);
     }
 
     if (stream) {
-      const response = await axios.request({
+      const response = await axios({
         ...options,
         responseType: "stream",
       });
@@ -70,6 +53,8 @@ app.post("/v1/chat/completions", async (req, res) => {
 
       let buffer = "";
       dataStream.on("data", (chunk) => {
+        res.write(chunk);
+
         buffer += chunk;
 
         const lines = buffer.split("\n");
@@ -141,12 +126,9 @@ app.post("/v1/chat/completions", async (req, res) => {
             console.error(ex.toString(), " => ", str);
           }
         }
-
-        res.write(chunk);
       });
 
       dataStream.on("end", () => {
-        // res.write("\n\n");
         res.end();
       });
 
