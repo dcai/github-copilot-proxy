@@ -13,7 +13,23 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Proxy endpoint
+app.get("/v1/models", async (req, res) => {
+  const copilotToken = await tokenManager.getToken();
+  const options = {
+    method: "GET",
+    url: "https://api.githubcopilot.com/models",
+    headers: {
+      authorization: `Bearer ${copilotToken}`,
+      "content-type": "application/json",
+      "editor-version": EDITOR_VERSION,
+      "user-agent": USER_AGENT,
+      "editor-plugin-version": EDITOR_PLUGIN_VERSION,
+    },
+  };
+  const response = await axios.request(options);
+  return res.json(response.data);
+});
+
 app.post("/v1/chat/completions", async (req, res) => {
   try {
     const payload = req.body;
@@ -67,11 +83,8 @@ app.post("/v1/chat/completions", async (req, res) => {
       });
     }
   } catch (err) {
-    if (err.response) {
-      res.status(err.response.status).json(err.response.data);
-    } else {
-      res.status(500).json({ error: err.message });
-    }
+    console.error(err);
+    res.status(500).json({ error: "something bad happened" });
   }
 });
 
