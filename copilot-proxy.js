@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import express from "express";
 import axios from "axios";
-import { getHeaders } from "./helper.js";
+import { getHeaders, logger } from "./helper.js";
 
 dotenv.config();
 
@@ -117,13 +117,12 @@ app.post("/v1/chat/completions", async (req, res) => {
               const json = JSON.parse(str);
               const stopped = json?.choices?.[0]?.finish_reason === "stop";
               if (stopped) {
-                console.info(`model: ${json.model}`);
-                console.info(`usage: ${json?.usage?.total_tokens}`);
+                logger.info(`model: ${json.model}`);
+                logger.info(`usage: ${json?.usage?.total_tokens}`);
               }
             }
           } catch (ex) {
-            // console.error(ex);
-            console.error(ex.toString(), " => ", str);
+            logger.error(ex.toString(), " => ", str);
           }
         }
       });
@@ -133,16 +132,16 @@ app.post("/v1/chat/completions", async (req, res) => {
       });
 
       dataStream.on("error", (err) => {
-        console.error("OpenAI stream error:", err);
+        logger.error("OpenAI stream error:", err);
         res.end();
       });
     }
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res.status(500).json({ error: "something bad happened" });
   }
 });
 
 app.listen(port, () => {
-  console.log(`Copilot Chat Proxy listening on http://${host}:${port}`);
+  logger.info(`Copilot Chat Proxy listening on http://${host}:${port}`);
 });

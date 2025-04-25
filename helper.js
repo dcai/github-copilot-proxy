@@ -1,4 +1,15 @@
 import axios from "axios";
+import pino from "pino";
+
+export const logger = pino({
+  level: process.env.LOG_LEVEL || "debug",
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+    },
+  },
+});
 
 class TokenManager {
   constructor() {
@@ -10,7 +21,7 @@ class TokenManager {
   async fetch() {
     // If we have a token and it's not expired, return it
     if (this.token && Date.now() < this.expiry) {
-      console.debug(`reusing token`);
+      logger.debug(`reusing token`);
       return this.token;
     }
     const options = {
@@ -19,21 +30,19 @@ class TokenManager {
       headers: await getHeaders(process.env.GITHUB_TOKEN),
     };
 
-    console.debug(`refreshing token`);
+    logger.debug(`refreshing token`);
     try {
       const resp = await axios(options);
       const data = resp.data;
-      console.info("token response", data);
-      // console.info(data);
+      logger.info(data, "token response");
       this.token = data.token;
       this.expiry = data.expires_at * 1000;
       if (data?.endpoints?.api) {
         this.api = data?.endpoints?.api;
       }
     } catch (ex) {
-      // console.error(ex);
-      console.error("ERROR: ", ex.toString());
-      console.error(ex.response.data);
+      logger.error(ex, "exception");
+      logger.error(ex.response.data, "response data");
     }
   }
   async getToken() {
