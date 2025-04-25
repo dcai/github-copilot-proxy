@@ -4,7 +4,7 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "start": "bun --watch app.js"
+    "start": "bun --bun --watch copilot-proxy.js"
   },
   "engines": {
     "node": ">=22"
