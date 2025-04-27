@@ -2,7 +2,7 @@
   "name": "github-copilot-proxy",
   "version": "1.0.0",
   "type": "module",
-  "main": "app.js",
+  "main": "copilot-proxy.js",
   "scripts": {
     "start": "bun --bun --watch copilot-proxy.js"
   },
