@@ -1,7 +1,4 @@
-import dotenv from "dotenv";
 import { getHeaders, logger } from "./helper.js";
-
-dotenv.config();
 
 const port = process.env.GHC_PORT || 7890;
 const host = process.env.GHC_HOST || "0.0.0.0";
@@ -11,7 +8,7 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
   process.exit(1);
 }
 
-const server = Bun.serve({
+Bun.serve({
   port,
   hostname: host,
   async fetch(req) {
