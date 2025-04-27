@@ -1,4 +1,3 @@
-import axios from "axios";
 import pino from "pino";
 
 export const logger = pino({
@@ -10,52 +9,6 @@ export const logger = pino({
     },
   },
 });
-
-class TokenManager {
-  constructor() {
-    this.token = null;
-    this.expiry = 0;
-    this.api = "https://api.githubcopilot.com";
-  }
-
-  async fetch() {
-    // If we have a token and it's not expired, return it
-    if (this.token && Date.now() < this.expiry) {
-      logger.debug(`reusing token`);
-      return this.token;
-    }
-    const options = {
-      method: "GET",
-      url: "https://api.github.com/copilot_internal/v2/token",
-      headers: await getHeaders(process.env.COPILOT_OAUTH_TOKEN),
-    };
-
-    logger.debug(`refreshing token`);
-    try {
-      const resp = await axios(options);
-      const data = resp.data;
-      logger.info(data, "token response");
-      this.token = data.token;
-      this.expiry = data.expires_at * 1000;
-      if (data?.endpoints?.api) {
-        this.api = data?.endpoints?.api;
-      }
-    } catch (ex) {
-      logger.error(ex, "exception");
-      logger.error(ex.response.data, "response data");
-    }
-  }
-  async getToken() {
-    await this.fetch();
-    return this.token;
-  }
-  async getApi() {
-    await this.fetch();
-    return this.api;
-  }
-}
-
-const tokenManager = new TokenManager();
 
 export async function getHeaders(token = null) {
   // 'editor-version': 'Neovim/0.6.1',
@@ -75,3 +28,55 @@ export async function getHeaders(token = null) {
     "user-agent": USER_AGENT,
   };
 }
+
+class TokenManager {
+  constructor() {
+    this.token = null;
+    this.expiry = 0;
+    this.api = "https://api.githubcopilot.com";
+  }
+
+  async fetch() {
+    // If we have a token and it's not expired, return it
+    if (this.token && Date.now() < this.expiry) {
+      logger.debug(`reusing token`);
+      return this.token;
+    }
+
+    try {
+      logger.debug(`refreshing token`);
+      const resp = await fetch(
+        "https://api.github.com/copilot_internal/v2/token",
+        {
+          method: "GET",
+          headers: await getHeaders(process.env.COPILOT_OAUTH_TOKEN),
+        },
+      );
+
+      if (!resp.ok) {
+        throw new Error(`HTTP error! status: ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      logger.info(data, "token response");
+      this.token = data.token;
+      this.expiry = data.expires_at * 1000;
+      if (data?.endpoints?.api) {
+        this.api = data?.endpoints?.api;
+      }
+    } catch (ex) {
+      logger.error(ex, "exception");
+      logger.error(ex.response?.data || ex.message, "response data");
+    }
+  }
+  async getToken() {
+    await this.fetch();
+    return this.token;
+  }
+  async getApi() {
+    await this.fetch();
+    return this.api;
+  }
+}
+
+const tokenManager = new TokenManager();

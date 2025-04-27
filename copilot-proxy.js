@@ -1,11 +1,8 @@
 import dotenv from "dotenv";
-import express from "express";
-import axios from "axios";
 import { getHeaders, logger } from "./helper.js";
 
 dotenv.config();
 
-const app = express();
 const port = process.env.GHC_PORT || 7890;
 const host = process.env.GHC_HOST || "0.0.0.0";
 
@@ -14,139 +11,97 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
   process.exit(1);
 }
 
-app.use(express.json());
+const server = Bun.serve({
+  port,
+  hostname: host,
+  async fetch(req) {
+    const url = new URL(req.url);
 
-app.get("/v1/models", async (_req, res) => {
-  const options = {
-    method: "GET",
-    url: "https://api.githubcopilot.com/models",
-    headers: await getHeaders(),
-  };
-  const response = await axios.request(options);
-  return res.json(response.data);
-});
-
-app.post("/v1/chat/completions", async (req, res) => {
-  try {
-    const payload = req.body;
-
-    const stream = payload?.stream || false;
-    const options = {
-      method: "POST",
-      url: "https://api.githubcopilot.com/chat/completions",
-      headers: await getHeaders(),
-      data: payload,
-    };
-    if (!stream) {
-      const response = await axios(options);
-      return res.json(response.data);
+    if (req.method === "GET" && url.pathname === "/v1/models") {
+      const response = await fetch("https://api.githubcopilot.com/models", {
+        method: "GET",
+        headers: await getHeaders(),
+      });
+      return Response.json(await response.json());
     }
 
-    if (stream) {
-      const response = await axios({
-        ...options,
-        responseType: "stream",
-      });
-      const dataStream = response.data;
+    if (req.method === "POST" && url.pathname === "/v1/chat/completions") {
+      try {
+        const payload = await req.json();
+        const stream = payload?.stream || false;
 
-      res.writeHead(200, {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      });
-      res.flushHeaders();
+        const response = await fetch(
+          "https://api.githubcopilot.com/chat/completions",
+          {
+            method: "POST",
+            headers: await getHeaders(),
+            body: JSON.stringify(payload),
+          },
+        );
 
-      let buffer = "";
-      dataStream.on("data", (chunk) => {
-        res.write(chunk);
+        if (!stream) {
+          return Response.json(await response.json());
+        }
 
-        buffer += chunk;
+        const stream_response = new ReadableStream({
+          async start(controller) {
+            const reader = response.body.getReader();
+            let buffer = "";
 
-        const lines = buffer.split("\n");
-        buffer = lines.pop(); // Keep the last line in the buffer
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-        for (let line of lines) {
-          line = line.trim();
-          if (line.includes("[DONE]")) {
-            continue;
-          }
-          try {
-            if (!line) {
-              continue;
-            }
+              const chunk = new TextDecoder().decode(value);
+              controller.enqueue(value);
 
-            // {
-            //   "choices": [
-            //     {
-            //       "finish_reason": "stop",
-            //       "index": 0,
-            //       "delta": {
-            //         "content": null,
-            //         "annotations": {
-            //           "CodeVulnerability": [
-            //             {
-            //               "id": 0,
-            //               "start_offset": 48,
-            //               "end_offset": 48,
-            //               "details": { "type": "general" },
-            //               "citations": {},
-            //             },
-            //           ],
-            //         },
-            //         "copilot_annotations": {
-            //           "CodeVulnerability": [
-            //             {
-            //               "id": 0,
-            //               "start_offset": 48,
-            //               "end_offset": 48,
-            //               "details": { "type": "general" },
-            //               "citations": {},
-            //             },
-            //           ],
-            //         },
-            //       },
-            //     },
-            //   ],
-            //   "created": 1745479088,
-            //   "id": "",
-            //   "usage": {
-            //     "completion_tokens": 305,
-            //     "prompt_tokens": 10,
-            //     "total_tokens": 315,
-            //   },
-            //   "model": "gpt-4.1-2025-04-14",
-            //   "system_fingerprint": "fp_11111",
-            // }
-            if (line.startsWith("data:")) {
-              const str = line.replace(/^data:\s*/, "");
-              const json = JSON.parse(str);
-              const stopped = json?.choices?.[0]?.finish_reason === "stop";
-              if (stopped) {
-                logger.info(`model: ${json.model}`);
-                logger.info(`usage: ${json?.usage?.total_tokens}`);
+              buffer += chunk;
+              const lines = buffer.split("\n");
+              buffer = lines.pop();
+
+              for (let line of lines) {
+                line = line.trim();
+                if (line.includes("[DONE]")) continue;
+                try {
+                  if (!line) continue;
+
+                  if (line.startsWith("data:")) {
+                    const str = line.replace(/^data:\s*/, "");
+                    const json = JSON.parse(str);
+                    const stopped =
+                      json?.choices?.[0]?.finish_reason === "stop";
+                    if (stopped) {
+                      logger.info(`model: ${json.model}`);
+                      logger.info(`usage: ${json?.usage?.total_tokens}`);
+                    }
+                  }
+                } catch (ex) {
+                  logger.error(ex.toString(), " => ", str);
+                }
               }
             }
-          } catch (ex) {
-            logger.error(ex.toString(), " => ", str);
-          }
-        }
-      });
+            controller.close();
+          },
+        });
 
-      dataStream.on("end", () => {
-        res.end();
-      });
-
-      dataStream.on("error", (err) => {
-        logger.error("OpenAI stream error:", err);
-        res.end();
-      });
+        return new Response(stream_response, {
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+          },
+        });
+      } catch (err) {
+        logger.error(err);
+        return Response.json(
+          { error: "something bad happened" },
+          { status: 500 },
+        );
+      }
     }
-  } catch (err) {
-    logger.error(err);
-    res.status(500).json({ error: "something bad happened" });
-  }
+
+    return new Response("Not found", { status: 404 });
+  },
 });
 
-app.listen(port, () => {
-  logger.info(`Copilot Chat Proxy listening on http://${host}:${port}`);
-});
+logger.info(`Copilot Chat Proxy listening on http://${host}:${port}`);
