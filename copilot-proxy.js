@@ -9,6 +9,11 @@ const app = express();
 const port = process.env.GHC_PORT || 7890;
 const host = process.env.GHC_HOST || "0.0.0.0";
 
+if (!process.env.COPILOT_OAUTH_TOKEN) {
+  logger.error("COPILOT_OAUTH_TOKEN is not set");
+  process.exit(1);
+}
+
 app.use(express.json());
 
 app.get("/v1/models", async (_req, res) => {

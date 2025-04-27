@@ -27,7 +27,7 @@ class TokenManager {
     const options = {
       method: "GET",
       url: "https://api.github.com/copilot_internal/v2/token",
-      headers: await getHeaders(process.env.GITHUB_TOKEN),
+      headers: await getHeaders(process.env.COPILOT_OAUTH_TOKEN),
     };
 
     logger.debug(`refreshing token`);
