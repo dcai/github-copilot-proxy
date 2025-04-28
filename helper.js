@@ -14,8 +14,8 @@ export async function getHeaders(token = null) {
   // 'editor-version': 'Neovim/0.6.1',
   // 'editor-plugin-version': 'copilot.vim/1.16.0',
   // 'user-agent': 'GithubCopilot/1.155.0',
-  const EDITOR_VERSION = "vscode/1.85.1";
-  const EDITOR_PLUGIN_VERSION = "copilot-chat/0.17.2024062801";
+  const EDITOR_VERSION = "vscode/1.99.3";
+  const PLUGIN_VERSION = "copilot-chat/0.17.2024062801";
   const USER_AGENT = "GitHubCopilotChat/0.17.2024062801";
   const copilotToken = token ? token : await tokenManager.getToken();
   return {
@@ -24,7 +24,7 @@ export async function getHeaders(token = null) {
     "content-type": "application/json",
     "authorization": `Bearer ${copilotToken}`,
     "editor-version": EDITOR_VERSION,
-    "editor-plugin-version": EDITOR_PLUGIN_VERSION,
+    "editor-plugin-version": PLUGIN_VERSION,
     "user-agent": USER_AGENT,
   };
 }
