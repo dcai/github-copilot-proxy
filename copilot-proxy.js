@@ -26,12 +26,20 @@ Bun.serve({
       try {
         const payload = await req.json();
         const stream = payload?.stream || false;
+        const headers = await getHeaders();
+        logger.info(
+          {
+            model: payload?.model,
+            question: payload?.messages?.[0].content?.substring(0, 255),
+          },
+          "requesting answer",
+        );
 
         const response = await fetch(
           "https://api.githubcopilot.com/chat/completions",
           {
             method: "POST",
-            headers: await getHeaders(),
+            headers,
             body: JSON.stringify(payload),
           },
         );
