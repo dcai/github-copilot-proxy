@@ -10,7 +10,7 @@ export const logger = pino({
   },
 });
 
-export async function getHeaders(token = null) {
+export async function getHeaders({ token = null, visionRequest = false } = {}) {
   // 'editor-version': 'Neovim/0.6.1',
   // 'editor-plugin-version': 'copilot.vim/1.16.0',
   // 'user-agent': 'GithubCopilot/1.155.0',
@@ -25,6 +25,7 @@ export async function getHeaders(token = null) {
     "authorization": `Bearer ${copilotToken}`,
     "editor-version": EDITOR_VERSION,
     "editor-plugin-version": PLUGIN_VERSION,
+    "Copilot-Vision-Request": visionRequest,
     "user-agent": USER_AGENT,
   };
 }
@@ -49,7 +50,7 @@ class TokenManager {
         "https://api.github.com/copilot_internal/v2/token",
         {
           method: "GET",
-          headers: await getHeaders(process.env.COPILOT_OAUTH_TOKEN),
+          headers: await getHeaders({ token: process.env.COPILOT_OAUTH_TOKEN }),
         },
       );
 

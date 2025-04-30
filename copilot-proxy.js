@@ -8,6 +8,32 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
   process.exit(1);
 }
 
+function hasImageInRequestBody(payload) {
+  try {
+    const userMessages = (payload?.messages || []).find(
+      (m) => m?.role === "user",
+    );
+
+    if (userMessages?.content instanceof String) {
+      return false;
+    }
+
+    const imageUrlContent = (userMessages?.content || []).find(
+      (c) => c.type === "image_url",
+    );
+    // const imageUrlExample = {
+    //   type: 'image_url',
+    //   image_url : {
+    //     url: 'data:image/png;base6,xxxxxxxxxxxxxxxxxxxx'
+    //   }
+    // }
+    return Boolean(imageUrlContent);
+  } catch (ex) {
+    logger.error(ex, "hasImageInRequestBody error");
+  }
+  return false;
+}
+
 Bun.serve({
   port,
   hostname: host,
@@ -25,10 +51,12 @@ Bun.serve({
     if (req.method === "POST" && url.pathname === "/v1/chat/completions") {
       try {
         const payload = await req.json();
+        const visionRequest = hasImageInRequestBody(payload);
         const stream = payload?.stream || false;
-        const headers = await getHeaders();
+        const headers = await getHeaders({ visionRequest });
         logger.info(
           {
+            visionRequest,
             model: payload?.model,
             question: payload?.messages?.[0].content?.substring(0, 255),
           },
