@@ -53,7 +53,16 @@ Bun.serve({
         );
 
         if (!stream) {
-          return Response.json(await response.json());
+          const json = await response.json();
+          logger.debug(
+            {
+              stream,
+              model: json?.model,
+              usage: json?.usage?.total_tokens,
+            },
+            "DONE",
+          );
+          return Response.json(json);
         }
 
         const stream_response = new ReadableStream({
@@ -86,6 +95,7 @@ Bun.serve({
                     if (stopped) {
                       logger.debug(
                         {
+                          stream,
                           model: json?.model,
                           usage: json?.usage?.total_tokens,
                         },
