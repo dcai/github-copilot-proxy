@@ -1,4 +1,10 @@
-import { getHeaders, logger } from "./helper.js";
+import {
+  hasImageInRequestBody,
+  getHeaders,
+  logger,
+  shortenText,
+  findUserMessageContent,
+} from "./helper.js";
 
 const port = process.env.GHC_PORT || 7890;
 const host = process.env.GHC_HOST || "0.0.0.0";
@@ -6,32 +12,6 @@ const host = process.env.GHC_HOST || "0.0.0.0";
 if (!process.env.COPILOT_OAUTH_TOKEN) {
   logger.error("COPILOT_OAUTH_TOKEN is not set");
   process.exit(1);
-}
-
-function hasImageInRequestBody(payload) {
-  try {
-    const userMessages = (payload?.messages || []).find(
-      (m) => m?.role === "user",
-    );
-
-    if (userMessages?.content instanceof String) {
-      return false;
-    }
-
-    const imageUrlContent = (userMessages?.content || []).find(
-      (c) => c.type === "image_url",
-    );
-    // const imageUrlExample = {
-    //   type: 'image_url',
-    //   image_url : {
-    //     url: 'data:image/png;base6,xxxxxxxxxxxxxxxxxxxx'
-    //   }
-    // }
-    return Boolean(imageUrlContent);
-  } catch (ex) {
-    logger.error(ex, "hasImageInRequestBody error");
-  }
-  return false;
 }
 
 Bun.serve({
@@ -58,7 +38,7 @@ Bun.serve({
           {
             visionRequest,
             model: payload?.model,
-            question: payload?.messages?.[0].content?.substring(0, 255),
+            question: shortenText(findUserMessageContent(payload)),
           },
           "requesting answer",
         );
@@ -104,8 +84,15 @@ Bun.serve({
                     const stopped =
                       json?.choices?.[0]?.finish_reason === "stop";
                     if (stopped) {
-                      logger.info(`model: ${json.model}`);
-                      logger.info(`usage: ${json?.usage?.total_tokens}`);
+                      logger.debug(
+                        {
+                          model: json?.model,
+                          usage: json?.usage?.total_tokens,
+                        },
+                        "DONE",
+                      );
+                      // logger.info(`model: ${json.model}`);
+                      // logger.info(`usage: ${json?.usage?.total_tokens}`);
                     }
                   }
                 } catch (ex) {

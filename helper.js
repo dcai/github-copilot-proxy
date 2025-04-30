@@ -59,7 +59,8 @@ class TokenManager {
       }
 
       const data = await resp.json();
-      logger.info(data, "token response");
+      logger.debug("token retrieved");
+      // logger.debug(data, "token retrieved");
       this.token = data.token;
       this.expiry = data.expires_at * 1000;
       if (data?.endpoints?.api) {
@@ -81,3 +82,62 @@ class TokenManager {
 }
 
 const tokenManager = new TokenManager();
+
+export function shortenText(text, maxLength = 256) {
+  if (!text) {
+    return "";
+  }
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  return text.slice(0, maxLength) + "...";
+}
+
+export function findUserMessageContent(payload) {
+  const msg = (payload?.messages || []).find((m) => m?.role === "user");
+
+  if (Array.isArray(msg?.content)) {
+    const m = msg.content.find((c) => c.type === "text");
+
+    return m?.text || "";
+  }
+
+  return msg?.content;
+}
+
+export function hasImageInRequestBody(payload) {
+  try {
+    const userMessage = (payload?.messages || []).find(
+      (m) => m?.role === "user",
+    );
+
+    if (typeof userMessage?.content === "string") {
+      return false;
+    }
+
+    if (Array.isArray(userMessage?.content)) {
+      // // for userMessage with image the message content is array
+      // const userMessageWithImageExample = [
+      //   {
+      //     type: "text",
+      //     "text":
+      //       "create a react component looks like this, use tailwind, all in one file",
+      //   },
+      //   {
+      //     type: "image_url",
+      //     image_url: {
+      //       url: "data:image/png;base6,xxxxxxxxxxxxxxxxxxxx",
+      //     },
+      //   },
+      // ];
+      const imageUrlContent = userMessage?.content.find(
+        (c) => c.type === "image_url",
+      );
+      return Boolean(imageUrlContent);
+    }
+  } catch (ex) {
+    logger.error(ex, "hasImageInRequestBody error");
+  }
+  return false;
+}
