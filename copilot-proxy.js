@@ -25,6 +25,7 @@ Bun.serve({
         method: "GET",
         headers: await getHeaders(),
       });
+      logger.debug(`fetched models`);
       return Response.json(await response.json());
     }
 
@@ -106,7 +107,7 @@ Bun.serve({
                     }
                   }
                 } catch (ex) {
-                  logger.error(ex.toString(), " => ", str);
+                  logger.error(ex, str);
                 }
               }
             }
@@ -124,7 +125,7 @@ Bun.serve({
       } catch (err) {
         logger.error(err);
         return Response.json(
-          { error: "something bad happened" },
+          { error: `something bad happened: ${String(err)}` },
           { status: 500 },
         );
       }

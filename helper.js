@@ -40,7 +40,7 @@ class TokenManager {
   async fetch() {
     // If we have a token and it's not expired, return it
     if (this.token && Date.now() < this.expiry) {
-      logger.debug(`reusing token`);
+      logger.debug(`reusing token, will expire ${this.expiry}`);
       return this.token;
     }
 
