@@ -9,6 +9,25 @@ import {
 const port = process.env.GHC_PORT || 7890;
 const host = process.env.GHC_HOST || "0.0.0.0";
 
+import * as Sentry from "@sentry/bun";
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    integrations: [
+      Sentry.httpIntegration(),
+      Sentry.requestDataIntegration(),
+      Sentry.nodeContextIntegration(),
+      // new Sentry.bunServerIntegration()
+    ],
+    tracesSampleRate: 1.0,
+    tracePropagationTargets: [
+      "localhost",
+      /^https:\/\/api\.githubcopilot\.com/,
+    ],
+  });
+}
+
 if (!process.env.COPILOT_OAUTH_TOKEN) {
   logger.error("COPILOT_OAUTH_TOKEN is not set");
   process.exit(1);
@@ -124,6 +143,7 @@ Bun.serve({
         });
       } catch (err) {
         logger.error(err);
+        Sentry.captureException(err);
         return Response.json(
           { error: `something bad happened: ${String(err)}` },
           { status: 500 },
