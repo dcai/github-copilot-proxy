@@ -143,7 +143,6 @@ Bun.serve({
         });
       } catch (err) {
         logger.error(err);
-        Sentry.captureException(err);
         return Response.json(
           { error: `something bad happened: ${String(err)}` },
           { status: 500 },
