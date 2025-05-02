@@ -12,6 +12,21 @@ export const logger = pino({
     },
   },
 });
+export function msToTime(ms) {
+  const milliseconds = ms % 1000;
+  const seconds = Math.floor((ms / 1000) % 60);
+  const minutes = Math.floor((ms / (1000 * 60)) % 60);
+  const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+
+  return (
+    (days ? days + "d " : "") +
+    (hours ? hours + "h " : "") +
+    (minutes ? minutes + "m " : "") +
+    (seconds ? seconds + "s " : "") +
+    (milliseconds ? milliseconds + "ms" : "")
+  ).trim();
+}
 
 export async function getHeaders({ token = null, visionRequest = false } = {}) {
   // 'editor-version': 'Neovim/0.6.1',
@@ -41,9 +56,10 @@ class TokenManager {
   }
 
   async fetch() {
+    const now = Date.now();
     // If we have a token and it's not expired, return it
-    if (this.token && Date.now() < this.expiry) {
-      logger.debug(`reusing token, will expire ${this.expiry}`);
+    if (this.token && now < this.expiry) {
+      logger.debug(`reusing token, will expire in ${msToTime(this.expiry - now)}`);
       return this.token;
     }
 
