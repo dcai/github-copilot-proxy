@@ -51,7 +51,7 @@ Bun.serve({
         method: "GET",
         headers: await getHeaders(),
       });
-      logger.debug(`fetched models`);
+      logger.info(`fetched models`);
       return Response.json(await response.json());
     }
 
@@ -63,9 +63,7 @@ Bun.serve({
         const headers = await getHeaders({ visionRequest });
         logger.info(
           {
-            visionRequest,
-            model: payload?.model,
-            question: shortenText(findUserMessageContent(payload)),
+            payload,
           },
           "requesting answer",
         );
@@ -81,18 +79,17 @@ Bun.serve({
 
         if (!stream) {
           const json = await response.json();
-          logger.debug(
+          logger.info(
             {
               stream,
-              model: json?.model,
-              usage: json?.usage?.total_tokens,
+              json,
             },
             "DONE",
           );
           return Response.json(json);
         }
 
-        const stream_response = new ReadableStream({
+        const streamResponse = new ReadableStream({
           async start(controller) {
             const reader = response.body.getReader();
             let buffer = "";
@@ -110,7 +107,9 @@ Bun.serve({
 
               for (let line of lines) {
                 line = line.trim();
-                if (line.includes("[DONE]")) continue;
+                if (line.includes("[DONE]")) {
+                  continue;
+                }
                 try {
                   if (!line) continue;
 
@@ -120,7 +119,7 @@ Bun.serve({
                     const stopped =
                       json?.choices?.[0]?.finish_reason === "stop";
                     if (stopped) {
-                      logger.debug(
+                      logger.info(
                         {
                           stream,
                           model: json?.model,
@@ -128,8 +127,6 @@ Bun.serve({
                         },
                         "DONE",
                       );
-                      // logger.info(`model: ${json.model}`);
-                      // logger.info(`usage: ${json?.usage?.total_tokens}`);
                     }
                   }
                 } catch (ex) {
@@ -141,7 +138,7 @@ Bun.serve({
           },
         });
 
-        return new Response(stream_response, {
+        return new Response(streamResponse, {
           headers: {
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",

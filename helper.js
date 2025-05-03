@@ -1,17 +1,41 @@
+import { join } from "path";
 import pino from "pino";
 
+const loggerFileTransport = pino.transport({
+  target: "pino-roll",
+  options: { file: join("logs", "log"), frequency: "daily", mkdir: true },
+});
+
+const logLevel = process.env.LOG_LEVEL || "debug";
+
 export const logger = pino({
-  level: process.env.LOG_LEVEL || "debug",
   transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      colorizeObjects: true,
-      ignore: "pid,hostname",
-      singleLine: true,
-    },
+    targets: [
+      {
+        target: "pino-pretty",
+        level: logLevel,
+        options: {
+          colorize: true,
+          colorizeObjects: true,
+          ignore: "pid,hostname",
+          singleLine: true,
+        },
+      },
+      {
+        target: "pino-roll",
+        level: logLevel,
+        options: {
+          file: join("logs", "chat"),
+          size: "1m",
+          extension: ".log",
+          // frequency: "daily",
+          mkdir: true,
+        },
+      },
+    ],
   },
 });
+
 export function msToTime(ms) {
   const milliseconds = ms % 1000;
   const seconds = Math.floor((ms / 1000) % 60);
@@ -59,7 +83,9 @@ class TokenManager {
     const now = Date.now();
     // If we have a token and it's not expired, return it
     if (this.token && now < this.expiry) {
-      logger.debug(`reusing token, will expire in ${msToTime(this.expiry - now)}`);
+      logger.debug(
+        `reusing token, will expire in ${msToTime(this.expiry - now)}`,
+      );
       return this.token;
     }
 
