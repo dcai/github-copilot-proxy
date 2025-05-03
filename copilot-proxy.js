@@ -11,6 +11,13 @@ const host = process.env.GHC_HOST || "0.0.0.0";
 
 import * as Sentry from "@sentry/bun";
 
+function addBreadcrumb(obj) {
+  if (!process.env.SENTRY_DSN) {
+    return;
+  }
+  Sentry.addBreadcrumb(obj);
+}
+
 if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
