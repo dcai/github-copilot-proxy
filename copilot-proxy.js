@@ -5,6 +5,8 @@ import {
   shortenText,
   findUserMessageContent,
 } from "./helper.js";
+import { hostname } from "os";
+import packageJson from "./package.json";
 
 const port = process.env.GHC_PORT || 7890;
 const host = process.env.GHC_HOST || "0.0.0.0";
@@ -21,6 +23,9 @@ function addBreadcrumb(obj) {
 if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
+    serverName: hostname(),
+    environment: process.env.NODE_ENV,
+    release: `${packageJson.name}@${packageJson.version}`,
     integrations: [
       Sentry.httpIntegration(),
       Sentry.requestDataIntegration(),
@@ -158,4 +163,6 @@ Bun.serve({
   },
 });
 
-logger.info(`Copilot Chat Proxy listening on http://${host}:${port}`);
+logger.info(
+  `Copilot Chat Proxy listening on http://${host}:${port}, hostname: ${hostname()}`,
+);
