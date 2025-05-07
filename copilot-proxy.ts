@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/bun";
 import type { Context } from "hono";
 import { Hono } from "hono";
+import { bearerAuth } from "hono/bearer-auth";
 import { hostname } from "os";
 import type {
   ChatCompletionPayload,
@@ -37,6 +38,16 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
   logger.error("COPILOT_OAUTH_TOKEN is not set");
   process.exit(1);
 }
+
+app.use(
+  "/*",
+  bearerAuth({
+    verifyToken: async (token) => {
+      logger.info(`token to identify: ${token}`);
+      return true;
+    },
+  }),
+);
 
 app.get("/v1/models", async (c: Context) => {
   const response = await fetch("https://api.githubcopilot.com/models", {
