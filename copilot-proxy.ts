@@ -3,17 +3,17 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { bearerAuth } from "hono/bearer-auth";
 import { hostname } from "os";
-import type {
-  ChatCompletionPayload,
-  CompletionResponse,
-  ModelsListResponse,
-} from "./helper.ts";
 import {
   findUserMessageContent,
   getHeaders,
   hasImageInRequestBody,
   logger,
 } from "./helper";
+import type {
+  ChatCompletionPayload,
+  CompletionResponse,
+  ModelsListResponse,
+} from "./helper.ts";
 import packageJson from "./package.json";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
