@@ -13,7 +13,7 @@ import {
   getHeaders,
   hasImageInRequestBody,
   logger,
-} from "./helper.ts";
+} from "./helper";
 import packageJson from "./package.json";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;

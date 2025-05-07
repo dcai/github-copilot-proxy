@@ -189,15 +189,21 @@ export type ModelsListResponse = {
   data: ModelType[];
 };
 
-export function findUserMessageContent(payload: ChatCompletionPayload): string {
-  const msg = (payload?.messages || []).find((m) => m?.role === "user");
-
+export function extractOneMessage(msg: Message) {
   if (Array.isArray(msg?.content)) {
     const m = msg.content.find((c) => c.type === "text");
     return m?.text || "";
   }
 
   return (msg?.content as string) || "";
+}
+
+export function findUserMessageContent(
+  payload: ChatCompletionPayload,
+): string[] {
+  const messages = (payload?.messages || []).filter((m) => m?.role === "user");
+
+  return messages.map((m) => extractOneMessage(m));
 }
 
 export function hasImageInRequestBody(payload: ChatCompletionPayload): boolean {
