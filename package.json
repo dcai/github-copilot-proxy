@@ -2,9 +2,9 @@
   "name": "github-copilot-proxy",
   "version": "1.0.0",
   "type": "module",
-  "main": "copilot-proxy.js",
+  "main": "copilot-proxy.ts",
   "scripts": {
-    "start": "bun --bun --watch copilot-proxy.js"
+    "start": "bun --bun --watch copilot-proxy.ts"
   },
   "engines": {
     "node": ">=22"

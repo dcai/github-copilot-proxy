@@ -1,19 +1,18 @@
 import * as Sentry from "@sentry/bun";
+import type { Context } from "hono";
 import { Hono } from "hono";
 import { hostname } from "os";
-import { getHeaders, hasImageInRequestBody, logger } from "./helper.js";
+import type {
+  ChatCompletionPayload,
+  CompletionResponse,
+  ModelsListResponse,
+} from "./helper.ts";
+import { getHeaders, hasImageInRequestBody, logger } from "./helper.ts";
 import packageJson from "./package.json";
 
-const port = process.env.GHC_PORT || 7890;
-const host = process.env.GHC_HOST || "0.0.0.0";
-const app = new Hono();
-
-function addBreadcrumb(obj) {
-  if (!process.env.SENTRY_DSN) {
-    return;
-  }
-  Sentry.addBreadcrumb(obj);
-}
+const port: number = Number(process.env.GHC_PORT) || 7890;
+const host: string = process.env.GHC_HOST || "0.0.0.0";
+const app: Hono = new Hono();
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -39,20 +38,20 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
   process.exit(1);
 }
 
-app.get("/v1/models", async (c) => {
+app.get("/v1/models", async (c: Context) => {
   const response = await fetch("https://api.githubcopilot.com/models", {
     method: "GET",
     headers: await getHeaders(),
   });
   logger.info(`fetched models`);
-  return c.json(await response.json());
+  return c.json((await response.json()) as ModelsListResponse);
 });
 
-app.post("/v1/chat/completions", async (c) => {
+app.post("/v1/chat/completions", async (c: Context) => {
   try {
-    const payload = await c.req.json();
-    const visionRequest = hasImageInRequestBody(payload);
-    const stream = payload?.stream || false;
+    const payload = (await c.req.json()) as ChatCompletionPayload;
+    const visionRequest: boolean = hasImageInRequestBody(payload);
+    const stream: boolean = payload?.stream || false;
     const headers = await getHeaders({ visionRequest });
     logger.info(
       {
@@ -71,7 +70,7 @@ app.post("/v1/chat/completions", async (c) => {
     );
 
     if (!stream) {
-      const json = await response.json();
+      const json = (await response.json()) as CompletionResponse;
       logger.info(
         {
           stream,
@@ -83,8 +82,8 @@ app.post("/v1/chat/completions", async (c) => {
     }
 
     const streamResponse = new ReadableStream({
-      async start(controller) {
-        const reader = response.body.getReader();
+      async start(controller: ReadableStreamDefaultController) {
+        const reader = response.body!.getReader();
         let buffer = "";
 
         while (true) {
@@ -96,7 +95,7 @@ app.post("/v1/chat/completions", async (c) => {
 
           buffer += chunk;
           const lines = buffer.split("\n");
-          buffer = lines.pop();
+          buffer = lines.pop() || "";
 
           for (let line of lines) {
             line = line.trim();
@@ -108,7 +107,7 @@ app.post("/v1/chat/completions", async (c) => {
 
               if (line.startsWith("data:")) {
                 const str = line.replace(/^data:\s*/, "");
-                const json = JSON.parse(str);
+                const json: CompletionResponse = JSON.parse(str);
                 const stopped = json?.choices?.[0]?.finish_reason === "stop";
                 if (stopped) {
                   logger.info(
@@ -122,7 +121,7 @@ app.post("/v1/chat/completions", async (c) => {
                 }
               }
             } catch (ex) {
-              logger.error(ex, str);
+              logger.error(ex, line);
             }
           }
         }
@@ -143,7 +142,7 @@ app.post("/v1/chat/completions", async (c) => {
   }
 });
 
-app.notFound((c) => c.text("Not found", 404));
+app.notFound((c: Context) => c.text("Not found", 404));
 
 logger.info(
   `Copilot Chat Proxy listening on http://${host}:${port}, hostname: ${hostname()}`,
