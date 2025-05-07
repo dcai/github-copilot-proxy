@@ -8,7 +8,12 @@ import type {
   CompletionResponse,
   ModelsListResponse,
 } from "./helper.ts";
-import { getHeaders, hasImageInRequestBody, logger } from "./helper.ts";
+import {
+  findUserMessageContent,
+  getHeaders,
+  hasImageInRequestBody,
+  logger,
+} from "./helper.ts";
 import packageJson from "./package.json";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
@@ -66,7 +71,7 @@ app.post("/v1/chat/completions", async (c: Context) => {
     const headers = await getHeaders({ visionRequest });
     logger.info(
       {
-        payload,
+        question: findUserMessageContent(payload),
       },
       "requesting answer",
     );
@@ -128,6 +133,25 @@ app.post("/v1/chat/completions", async (c: Context) => {
                       usage: json?.usage?.total_tokens,
                     },
                     "DONE",
+                  );
+                }
+              } else {
+                try {
+                  const error: CompletionResponse = JSON.parse(line);
+                  logger.error(
+                    {
+                      line,
+                      error,
+                    },
+                    "error object received when streaming answer",
+                  );
+                } catch (ex) {
+                  logger.error(
+                    {
+                      line,
+                      ex,
+                    },
+                    "parse line error",
                   );
                 }
               }
