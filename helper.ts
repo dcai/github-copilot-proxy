@@ -238,3 +238,87 @@ export function addBreadcrumb(Sentry: any, obj: SentryBreadcrumbData): void {
   }
   Sentry.addBreadcrumb(obj);
 }
+
+export function makeReadableStream(
+  reader: ReadableStreamDefaultReader,
+  parseChunk = false,
+) {
+  if (!parseChunk) {
+    return new ReadableStream({
+      async start(controller: ReadableStreamDefaultController) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          controller.enqueue(value);
+        }
+        controller.close();
+      },
+    });
+  }
+
+  return new ReadableStream({
+    async start(controller: ReadableStreamDefaultController) {
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = new TextDecoder().decode(value);
+        controller.enqueue(value);
+
+        buffer += chunk;
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (let line of lines) {
+          line = line.trim();
+          if (line.includes("[DONE]")) {
+            continue;
+          }
+          try {
+            if (!line) continue;
+
+            if (line.startsWith("data:")) {
+              const str = line.replace(/^data:\s*/, "");
+              const json: CompletionResponse = JSON.parse(str);
+              const stopped = json?.choices?.[0]?.finish_reason === "stop";
+              if (stopped) {
+                logger.info(
+                  {
+                    model: json?.model,
+                    usage: json?.usage?.total_tokens,
+                  },
+                  "DONE",
+                );
+              }
+            } else {
+              try {
+                const error: CompletionResponse = JSON.parse(line);
+                logger.error(
+                  {
+                    line,
+                    error,
+                  },
+                  "error object received when streaming answer",
+                );
+              } catch (ex) {
+                logger.error(
+                  {
+                    line,
+                    ex,
+                  },
+                  "parse line error",
+                );
+              }
+            }
+          } catch (ex) {
+            logger.error(ex, line);
+          }
+        }
+      }
+      controller.close();
+    },
+  });
+}

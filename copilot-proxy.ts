@@ -8,6 +8,7 @@ import {
   getHeaders,
   hasImageInRequestBody,
   logger,
+  makeReadableStream,
 } from "./helper";
 import type {
   ChatCompletionPayload,
@@ -71,6 +72,7 @@ app.post("/v1/chat/completions", async (c: Context) => {
     const headers = await getHeaders({ visionRequest });
     logger.info(
       {
+        // payload,
         question: findUserMessageContent(payload),
       },
       "requesting answer",
@@ -97,73 +99,7 @@ app.post("/v1/chat/completions", async (c: Context) => {
       return c.json(json);
     }
 
-    const streamResponse = new ReadableStream({
-      async start(controller: ReadableStreamDefaultController) {
-        const reader = response.body!.getReader();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = new TextDecoder().decode(value);
-          controller.enqueue(value);
-
-          buffer += chunk;
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (let line of lines) {
-            line = line.trim();
-            if (line.includes("[DONE]")) {
-              continue;
-            }
-            try {
-              if (!line) continue;
-
-              if (line.startsWith("data:")) {
-                const str = line.replace(/^data:\s*/, "");
-                const json: CompletionResponse = JSON.parse(str);
-                const stopped = json?.choices?.[0]?.finish_reason === "stop";
-                if (stopped) {
-                  logger.info(
-                    {
-                      stream,
-                      model: json?.model,
-                      usage: json?.usage?.total_tokens,
-                    },
-                    "DONE",
-                  );
-                }
-              } else {
-                try {
-                  const error: CompletionResponse = JSON.parse(line);
-                  logger.error(
-                    {
-                      line,
-                      error,
-                    },
-                    "error object received when streaming answer",
-                  );
-                } catch (ex) {
-                  logger.error(
-                    {
-                      line,
-                      ex,
-                    },
-                    "parse line error",
-                  );
-                }
-              }
-            } catch (ex) {
-              logger.error(ex, line);
-            }
-          }
-        }
-        controller.close();
-      },
-    });
-
+    const streamResponse = makeReadableStream(response.body.getReader(), true);
     return new Response(streamResponse, {
       headers: {
         "Content-Type": "text/event-stream",
