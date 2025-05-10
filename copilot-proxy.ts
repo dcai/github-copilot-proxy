@@ -2,6 +2,8 @@ import * as Sentry from "@sentry/bun";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { bearerAuth } from "hono/bearer-auth";
+// import { logger as honoLogger } from "hono/logger";
+import { cors } from "hono/cors";
 import { hostname } from "os";
 import {
   findUserMessageContent,
@@ -47,6 +49,8 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
 
 app.use(
   "/*",
+  cors(),
+  // honoLogger(),
   bearerAuth({
     verifyToken: async (token) => {
       logger.info(`token to identify: ${token}`);
