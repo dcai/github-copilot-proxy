@@ -6,6 +6,7 @@ import { bearerAuth } from "hono/bearer-auth";
 import { cors } from "hono/cors";
 import { hostname } from "os";
 import {
+  findSystemMessageContent,
   findUserMessageContent,
   getHeaders,
   hasImageInRequestBody,
@@ -81,8 +82,8 @@ app.post("/v1/chat/completions", async (c: Context) => {
     const headers = await getHeaders({ visionRequest });
     logger.info(
       {
-        // payload,
-        question: findUserMessageContent(payload),
+        system: findSystemMessageContent(payload),
+        user: findUserMessageContent(payload),
       },
       "requesting answer",
     );
@@ -103,12 +104,14 @@ app.post("/v1/chat/completions", async (c: Context) => {
         logger.info(
           {
             stream,
-            json,
+            // json,
+            answer: json?.choices?.[0]?.message?.content,
           },
-          "DONE",
+          "[DONE]",
         );
         return c.json(json);
       } catch (e) {
+        logger.error(e, 'error')
         return c.json(
           {
             error: `something bad happened: ${String(e)}`,

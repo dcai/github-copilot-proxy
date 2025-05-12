@@ -168,6 +168,10 @@ export interface CompletionResponse {
   model?: string;
   choices?: Array<{
     finish_reason?: string;
+    message: {
+      content: string;
+      role: string;
+    };
   }>;
   usage?: {
     total_tokens?: number;
@@ -196,6 +200,15 @@ export function extractOneMessage(msg: Message) {
   }
 
   return (msg?.content as string) || "";
+}
+
+export function findSystemMessageContent(
+  payload: ChatCompletionPayload,
+): string[] {
+  const messages = (payload?.messages || []).filter(
+    (m) => m?.role === "system",
+  );
+  return messages.map((m) => extractOneMessage(m));
 }
 
 export function findUserMessageContent(
