@@ -18,6 +18,7 @@ import type {
   ModelsListResponse,
 } from "./helper.ts";
 import packageJson from "./package.json";
+import { ContentfulStatusCode } from "hono/utils/http-status";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
 const host: string = process.env.GHC_HOST || "0.0.0.0";
@@ -92,15 +93,30 @@ app.post("/v1/chat/completions", async (c: Context) => {
     );
 
     if (!stream) {
-      const json = (await response.json()) as CompletionResponse;
-      logger.info(
-        {
-          stream,
-          json,
-        },
-        "DONE",
-      );
-      return c.json(json);
+      const text = await response.text();
+      try {
+        const json = JSON.parse(text) as CompletionResponse;
+        logger.info(
+          {
+            stream,
+            json,
+          },
+          "DONE",
+        );
+        return c.json(json);
+      } catch (e) {
+        return c.json(
+          {
+            error: `something bad happened: ${String(e)}`,
+            upstream: {
+              status: response.status,
+              statusText: response.statusText,
+              text: text,
+            },
+          },
+          500,
+        );
+      }
     }
 
     const streamResponse = makeReadableStream(response.body.getReader(), true);
