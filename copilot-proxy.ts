@@ -49,7 +49,7 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
 }
 
 app.use(
-  "/*",
+  "/v1/*",
   cors(),
   // honoLogger(),
   bearerAuth({
@@ -59,6 +59,10 @@ app.use(
     },
   }),
 );
+
+app.get("/health", async (c: Context) => {
+  return c.text("ok");
+});
 
 app.get("/v1/models", async (c: Context) => {
   const response = await fetch("https://api.githubcopilot.com/models", {
