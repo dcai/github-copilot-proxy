@@ -1,4 +1,5 @@
 # Project Context: GitHub Copilot Proxy
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dcai/github-copilot-proxy)
 
 This project is a proxy server for GitHub Copilot, designed to handle requests and responses between a client and the GitHub Copilot API. It is built using Bun and Hono, a fast JavaScript runtime and web framework, and utilizes the `pino` logging library for logging purposes.
 
