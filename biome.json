@@ -1,0 +1,160 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "files": {
+    "ignore": ["node_modules/*", "coverage/*"]
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
+  },
+  "organizeImports": {
+    "enabled": false
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 80,
+    "attributePosition": "auto"
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "always",
+      "bracketSameLine": false,
+      "bracketSpacing": true,
+      "jsxQuoteStyle": "double",
+      "lineWidth": 80,
+      "indentWidth": 2,
+      "indentStyle": "space",
+      "quoteProperties": "preserve",
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "json": {
+    "parser": {
+      "allowComments": true,
+      "allowTrailingCommas": true
+    },
+    "formatter": {
+      "enabled": true,
+      "indentWidth": 2,
+      "indentStyle": "space",
+      "lineEnding": "lf",
+      "trailingCommas": "none",
+      "lineWidth": 80
+    }
+  },
+  "linter": {
+    "ignore": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/config/mocks/**/*"],
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "all": false
+      },
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "noVoidTypeReturn": "warn",
+        "useExhaustiveDependencies": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "complexity": {
+        "noBannedTypes": "warn",
+        "noExtraBooleanCast": {
+          "level": "warn",
+          "fix": "none"
+        },
+        "noForEach": "off",
+        "noStaticOnlyClass": "warn",
+        "noUselessSwitchCase": "off",
+        "useArrowFunction": "off",
+        "useLiteralKeys": "off",
+        "noUselessFragments": {
+          "level": "warn",
+          "fix": "none"
+        },
+        "useOptionalChain": {
+          "level": "error",
+          "fix": "safe"
+        }
+      },
+      "suspicious": {
+        "noDoubleEquals": {
+          "level": "error"
+        },
+        "noPrototypeBuiltins": "warn",
+        "noConstEnum": "warn",
+        "noArrayIndexKey": "off",
+        "noAssignInExpressions": "warn",
+        "noDuplicateTestHooks": "warn",
+        "noEmptyInterface": "warn",
+        "noExplicitAny": "off",
+        "noExportsInTest": "warn",
+        "noImplicitAnyLet": "warn",
+        "noShadowRestrictedNames": "warn"
+      },
+      "performance": {
+        "noAccumulatingSpread": "warn",
+        "noDelete": "off"
+      },
+      "style": {
+        "useEnumInitializers": {
+          "level": "warn",
+          "fix": "none"
+        },
+        "noVar": {
+          "level": "warn",
+          "fix": "unsafe"
+        },
+        "useFilenamingConvention": {
+          "level": "warn",
+          "options": {
+            "strictCase": false,
+            "requireAscii": true,
+            "filenameCases": ["camelCase", "export"]
+          }
+        },
+        "useNamingConvention": {
+          "level": "off",
+          "options": {
+            "strictCase": false,
+            "requireAscii": true,
+            "enumMemberCase": "CONSTANT_CASE",
+            "conventions": [
+              {
+                "selector": {
+                  "kind": "objectLiteralMember"
+                },
+                "formats": [
+                  "camelCase",
+                  "CONSTANT_CASE",
+                  "snake_case",
+                  "PascalCase"
+                ]
+              }
+            ]
+          }
+        },
+        "noNonNullAssertion": "off",
+        "noShoutyConstants": "warn",
+        "noUnusedTemplateLiteral": "off",
+        "noUselessElse": "warn",
+        "useImportType": "off",
+        "useNodejsImportProtocol": "off",
+        "useNumberNamespace": "warn",
+        "useSelfClosingElements": "off",
+        "useTemplate": {
+          "level": "off",
+          "fix": "none"
+        }
+      }
+    }
+  }
+}

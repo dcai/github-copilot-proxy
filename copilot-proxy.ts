@@ -111,7 +111,7 @@ app.post("/v1/chat/completions", async (c: Context) => {
         );
         return c.json(json);
       } catch (e) {
-        logger.error(e, 'error')
+        logger.error(e, "error");
         return c.json(
           {
             error: `something bad happened: ${String(e)}`,
