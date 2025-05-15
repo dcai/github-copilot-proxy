@@ -62,10 +62,10 @@ export async function getHeaders({
     "accept": "application/json",
     "accept-encoding": "gzip,deflate,br",
     "content-type": "application/json",
+    "copilot-vision-request": String(visionRequest),
     "authorization": `Bearer ${copilotToken}`,
     "editor-version": EDITOR_VERSION,
     "editor-plugin-version": PLUGIN_VERSION,
-    "Copilot-Vision-Request": String(visionRequest),
     "user-agent": USER_AGENT,
   };
 }
