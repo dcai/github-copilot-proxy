@@ -85,7 +85,7 @@ app.post("/v1/chat/completions", async (c: Context) => {
         system: findSystemMessageContent(payload),
         user: findUserMessageContent(payload),
       },
-      "requesting answer",
+      "[ASKING]",
     );
 
     const response = await fetch(
