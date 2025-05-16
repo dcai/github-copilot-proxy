@@ -4,7 +4,8 @@
   "type": "module",
   "main": "copilot-proxy.ts",
   "scripts": {
-    "start": "bun --bun --watch copilot-proxy.ts"
+    "start": "bun --bun --watch copilot-proxy.ts",
+    "build": "bun build --target=node ./copilot-proxy.ts --outdir ./dist --minify --production --sourcemap=none"
   },
   "engines": {
     "node": ">=22"
