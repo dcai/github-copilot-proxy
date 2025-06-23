@@ -55,8 +55,9 @@ export async function getHeaders({
   visionRequest = false,
 }: GetHeadersOptions = {}): Promise<Record<string, string>> {
   const EDITOR_VERSION = "vscode/1.99.3";
-  const PLUGIN_VERSION = "copilot-chat/0.17.2024062801";
-  const USER_AGENT = "GitHubCopilotChat/0.17.2024062801";
+  const version_string = "0.17.2024062801";
+  const PLUGIN_VERSION = `copilot-chat/${version_string}`;
+  const USER_AGENT = `GitHubCopilotChat/${version_string}`;
   const copilotToken = token ? token : await tokenManager.getToken();
   return {
     "accept": "application/json",
