@@ -1,5 +1,7 @@
 import * as Sentry from "@sentry/bun";
 import type { Context } from "hono";
+import chalk from "chalk";
+
 import { Hono } from "hono";
 import { bearerAuth } from "hono/bearer-auth";
 // import { logger as honoLogger } from "hono/logger";
@@ -80,13 +82,11 @@ app.post("/v1/chat/completions", async (c: Context) => {
     const visionRequest: boolean = hasImageInRequestBody(payload);
     const stream: boolean = payload?.stream || false;
     const headers = await getHeaders({ visionRequest });
-    logger.info(
-      {
-        system: findSystemMessageContent(payload),
-        user: findUserMessageContent(payload),
-      },
-      "[ASKING]",
-    );
+    console.info("[SYSTEM] Prompt:");
+    console.info(chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"));
+    console.info("[USER] Prompt:");
+    console.info(chalk.red(findUserMessageContent(payload)?.[0]));
+    logger.info("Prompts sent", "[ASKING]");
 
     const response = await fetch(
       "https://api.githubcopilot.com/chat/completions",
