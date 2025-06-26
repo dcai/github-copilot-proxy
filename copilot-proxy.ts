@@ -132,7 +132,7 @@ app.post("/v1/chat/completions", async (c: Context) => {
       }
     }
 
-    const streamResponse = makeReadableStream(response.body.getReader(), true);
+    const streamResponse = makeReadableStream(response.body.getReader(), false);
     return new Response(streamResponse, {
       headers: {
         "Content-Type": "text/event-stream",

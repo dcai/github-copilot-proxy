@@ -164,11 +164,31 @@ export interface ChatCompletionPayload {
   stream?: boolean;
   messages?: Message[];
 }
+
+export type FilterType = {
+  filtered: boolean;
+  severity: "safe" | "low" | "medium" | "high" | "critical";
+};
 export interface CompletionResponse {
   model?: string;
   choices?: Array<{
     finish_reason?: string;
-    message: {
+    index?: number;
+    content_filter_offsets?: {
+      check_offset: number;
+      start_offset: number;
+      end_offset: number;
+    };
+    content_filter_results?: {
+      hate?: FilterType;
+      self_harm?: FilterType;
+      sexual?: FilterType;
+      violence?: FilterType;
+    };
+    delta?: {
+      content: string;
+    };
+    message?: {
       content: string;
       role: string;
     };
@@ -296,6 +316,7 @@ export function makeReadableStream(
             if (line.startsWith("data:")) {
               const str = line.replace(/^data:\s*/, "");
               const json: CompletionResponse = JSON.parse(str);
+
               const stopped = json?.choices?.[0]?.finish_reason === "stop";
               if (stopped) {
                 logger.info(
