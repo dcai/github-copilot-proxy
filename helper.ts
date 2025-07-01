@@ -161,6 +161,10 @@ interface MessageContent {
 }
 
 export interface ChatCompletionPayload {
+  model: string;
+  temperature?: number;
+  top_p?: number;
+  service_tier?: string; // 'auto'
   stream?: boolean;
   messages?: Message[];
 }
