@@ -148,7 +148,24 @@ app.post("/v1/chat/completions", async (c: Context) => {
 });
 
 app.route("/llama", llamaRoutes);
-app.notFound((c: Context) => c.text("Not found", 404));
+app.notFound(async (c: Context) => {
+  const method = c.req.method;
+  const path = c.req.path;
+  let body: any = undefined;
+  try {
+    body = await c.req.json();
+  } catch (e) {
+    // Not a JSON body or no body
+    body = undefined;
+  }
+  logger.warn(
+    `Not found: ${method} ${path}` + (body ? ` | Body: ${JSON.stringify(body)}` : "")
+  );
+  return c.text(
+    `Not found: ${method} ${path}` + (body ? `\nBody: ${JSON.stringify(body)}` : ""),
+    404
+  );
+});
 
 logger.info(
   `Copilot Chat Proxy listening on http://${host}:${port}, hostname: ${hostname()}`,
@@ -158,3 +175,4 @@ export default {
   port,
   fetch: app.fetch,
 };
+
