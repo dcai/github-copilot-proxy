@@ -20,7 +20,7 @@ import type {
   CompletionResponse,
   ModelsListResponse,
 } from "./helper.ts";
-import { llamaRoutes } from "./llama";
+import { ollamaApiRoutes } from "./ollama";
 import packageJson from "./package.json";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
@@ -147,7 +147,8 @@ app.post("/v1/chat/completions", async (c: Context) => {
   }
 });
 
-app.route("/llama", llamaRoutes);
+app.route("/ollama", ollamaApiRoutes);
+
 app.notFound(async (c: Context) => {
   const method = c.req.method;
   const path = c.req.path;
@@ -159,11 +160,13 @@ app.notFound(async (c: Context) => {
     body = undefined;
   }
   logger.warn(
-    `Not found: ${method} ${path}` + (body ? ` | Body: ${JSON.stringify(body)}` : "")
+    `Not found: ${method} ${path}` +
+      (body ? ` | Body: ${JSON.stringify(body)}` : ""),
   );
   return c.text(
-    `Not found: ${method} ${path}` + (body ? `\nBody: ${JSON.stringify(body)}` : ""),
-    404
+    `Not found: ${method} ${path}` +
+      (body ? `\nBody: ${JSON.stringify(body)}` : ""),
+    404,
   );
 });
 
@@ -175,4 +178,3 @@ export default {
   port,
   fetch: app.fetch,
 };
-

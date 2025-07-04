@@ -4,6 +4,7 @@ import type { Message } from "./helper";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import {
+  dateToMicroISO,
   findSystemMessageContent,
   findUserMessageContent,
   getHeaders,
@@ -19,7 +20,7 @@ export type OllamaMessage = {
   content: string;
   role: "user" | "assistant" | "system";
 };
-export interface OllamaCompletionRequest {
+export interface OllamaChatRequest {
   messages: OllamaMessage[];
   stream: boolean;
   model: string;
@@ -43,7 +44,7 @@ export interface OllamaCompletionResponse {
 
 // Convert Llama request to Copilot chat payload
 export function llamaToCopilotPayload(
-  req: OllamaCompletionRequest,
+  req: OllamaChatRequest,
 ): ChatCompletionPayload {
   return {
     model: "gpt-4.1", // default model
@@ -57,39 +58,41 @@ export function llamaToCopilotPayload(
 }
 
 // Convert Copilot response to Llama-style response
-export function copilotToLlamaResponse(
-  resp: CompletionResponse,
-): OllamaCompletionResponse {
-  const choice = resp.choices?.[0];
+export function copilotToOllamaStreamResponse(
+  openAiResponse: CompletionResponse,
+): string {
+  const choice = openAiResponse.choices?.[0];
   const text = choice?.message?.content || "";
-  // Simple token count approximation by splitting on whitespace
-  const tokenCount = text.split(/\s+/).filter(Boolean).length;
-  return {
+
+  const secondLine = JSON.stringify({
     model: "llama",
-    created: new Date().toISOString(),
+    created_at: dateToMicroISO(new Date()),
     message: {
       content: text,
-      "role": "assistant",
+      role: "assistant",
     },
-    done_reason: "stop",
     done: true,
-    "total_duration": 4883583458,
-    "load_duration": 1334875,
-    "prompt_eval_count": 26,
-    "prompt_eval_duration": 342546000,
-    "eval_count": 282,
-    "eval_duration": 4535599000,
-  };
+    done_reason: "stop",
+    // total_duration: 4883583458,
+    // load_duration: 1334875,
+    // prompt_eval_count: 26,
+    // prompt_eval_duration: 342546000,
+    // eval_count: 282,
+    // eval_duration: 4535599000,
+  });
+  return `${secondLine}`;
 }
 
-export const llamaRoutes = new Hono();
+export const ollamaApiRoutes = new Hono();
 
 // Llama-style completions proxy (no streaming)
-llamaRoutes.post("/api/chat", async (c: Context) => {
+ollamaApiRoutes.post("/api/chat", async (c: Context) => {
   try {
-    const llamaReq = (await c.req.json()) as OllamaCompletionRequest;
+    const ollamaChatReq = (await c.req.json()) as OllamaChatRequest;
+    const stream = ollamaChatReq.stream || false;
+    logger.info(`/api/chat: ${JSON.stringify(ollamaChatReq)}`);
     // Map Llama request to Copilot payload
-    const copilotPayload = llamaToCopilotPayload(llamaReq);
+    const copilotPayload = llamaToCopilotPayload(ollamaChatReq);
     const headers = await getHeaders();
     // Call Copilot backend
     const upstream = await fetch(
@@ -97,10 +100,6 @@ llamaRoutes.post("/api/chat", async (c: Context) => {
       { method: "POST", headers, body: JSON.stringify(copilotPayload) },
     );
     const text = await upstream.text();
-    console.info(
-      "🤔 ///// llama.ts @ LINE 105",
-      JSON.stringify(JSON.parse(text), null, 1),
-    );
     if (!upstream.ok) {
       return c.json(
         { error: { message: text, code: upstream.status } },
@@ -108,12 +107,16 @@ llamaRoutes.post("/api/chat", async (c: Context) => {
       );
     }
     const copilotResp = JSON.parse(text) as CompletionResponse;
-    const llamaResp = copilotToLlamaResponse(copilotResp);
-    console.info(
-      "🤔 ///// llama.ts @ LINE 97",
-      JSON.stringify(llamaResp, null, 1),
-    );
-    return c.json(llamaResp);
+    if (stream) {
+      const ollamaResp = copilotToOllamaStreamResponse(copilotResp);
+      console.info("🤔 ///// ollama.ts @ LINE 116", ollamaResp);
+      return c.text(ollamaResp, 200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      });
+    }
+    return c.json({});
   } catch (err: any) {
     logger.error(err);
     return c.json(
@@ -123,50 +126,50 @@ llamaRoutes.post("/api/chat", async (c: Context) => {
   }
 });
 
-llamaRoutes.get("/api/tags", async (c: Context) => {
+const LLAMA = "llama";
+ollamaApiRoutes.get("/api/tags", async (c: Context) => {
+  // const modelNames = ["gpt-4.1", "claude-sonnet-4", "o4-mini"];
+  const modelNames = [LLAMA];
+  const models = modelNames.map((name) => ({
+    name,
+    model: name,
+    modified_at: new Date("2025-01-01").toISOString(),
+    size: 0,
+    digest:
+      "sha256:8daa9615cce30c259a9555b1cc250d461d1bc69980a274b44d7eda0be78076d8",
+    details: {
+      parent_model: LLAMA,
+      format: "gguf",
+      family: LLAMA,
+      families: [LLAMA],
+      parameter_size: "671B",
+      quantization_level: "Q4_0",
+    },
+  }));
   return c.json({
-    models: [
-      {
-        "name": "llama",
-        "model": "llama",
-        "modified_at": "2023-12-07T09:32:18.757212583Z",
-        "size": 3825819519,
-        "digest":
-          "sha256:8daa9615cce30c259a9555b1cc250d461d1bc69980a274b44d7eda0be78076d8",
-        "details": {
-          "parent_model": "",
-          "format": "gguf",
-          "family": "llama",
-          "families": ["llama"],
-          "parameter_size": "671B",
-          "quantization_level": "Q4_0",
-        },
-      },
-    ],
+    models,
   });
 });
-llamaRoutes.post("/api/pull", async (c: Context) => {
+ollamaApiRoutes.post("/api/pull", async (c: Context) => {
   return c.json({ status: "success", message: "Model pull initiated." });
 });
-llamaRoutes.post("/api/show", async (c: Context) => {
+ollamaApiRoutes.post("/api/show", async (c: Context) => {
+  const payload = (await c.req.json()) as { model: string };
+  logger.info(`/api/show: ${payload.model}`);
+  const modelName = payload.model;
   return c.json({
-    "modelfile":
-      '# Modelfile generated by "ollama show"\n# To build a new Modelfile based on this one, replace the FROM line with:\n# FROM llama2:latest\n\nFROM /Users/username/.ollama/models/blobs/sha256:8daa9615cce30c259a9555b1cc250d461d1bc69980a274b44d7eda0be78076d8\nTEMPLATE """[INST] <<SYS>>\n{{ .System }}\n<</SYS>>\n\n{{ .Prompt }} [/INST]\n"""\nSYSTEM """You are a helpful, respectful and honest assistant."""\nPARAMETER stop "[INST]"\nPARAMETER stop "[/INST]"',
-    "parameters":
-      'temperature 0.8\nrepeat_penalty 1.1\ntop_k 40\ntop_p 0.9\nstop "[INST]"\nstop "[/INST]"',
-    "template":
-      "[INST] <<SYS>>\n{{ .System }}\n<</SYS>>\n\n{{ .Prompt }} [/INST]",
+    "modelfile": "",
     "system": "You are a helpful, respectful and honest assistant.",
     "details": {
-      "parent_model": "",
+      "parent_model": LLAMA,
       "format": "gguf",
-      "family": "llama",
-      "families": ["llama"],
+      "family": modelName,
+      "families": [modelName],
       "parameter_size": "7B",
       "quantization_level": "Q4_0",
     },
     "model_info": {
-      "general.architecture": "llama",
+      "general.architecture": LLAMA,
       "general.file_type": 2,
       "general.parameter_count": 6738415616,
       "general.quantization_version": 2,
@@ -180,7 +183,7 @@ llamaRoutes.post("/api/show", async (c: Context) => {
       "llama.rope.dimension_count": 128,
       "llama.rope.freq_base": 10000,
       "llama.vocab_size": 32000,
-      "tokenizer.ggml.model": "llama",
+      "tokenizer.ggml.model": LLAMA,
     },
     "capabilities": [
       "completion",

@@ -372,3 +372,25 @@ export function makeReadableStream(
     },
   });
 }
+
+export function dateToMicroISO(d = new Date()) {
+  function pad(n: number, l: number) {
+    return n.toString().padStart(l, "0");
+  }
+  return (
+    d.getUTCFullYear() +
+    "-" +
+    pad(d.getUTCMonth() + 1, 2) +
+    "-" +
+    pad(d.getUTCDate(), 2) +
+    "T" +
+    pad(d.getUTCHours(), 2) +
+    ":" +
+    pad(d.getUTCMinutes(), 2) +
+    ":" +
+    pad(d.getUTCSeconds(), 2) +
+    "." +
+    pad(d.getUTCMilliseconds(), 3) +
+    "000Z"
+  );
+}
