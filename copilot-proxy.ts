@@ -21,6 +21,9 @@ import type {
   ModelsListResponse,
 } from "./helper.ts";
 import packageJson from "./package.json";
+import type { LlamaCompletionRequest } from "./llama";
+import { llamaToCopilotPayload, copilotToLlamaResponse } from "./llama";
+
 import { ContentfulStatusCode } from "hono/utils/http-status";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
@@ -144,6 +147,37 @@ app.post("/v1/chat/completions", async (c: Context) => {
   } catch (err) {
     logger.error(err);
     return c.json({ error: `something bad happened: ${String(err)}` }, 500);
+  }
+});
+
+// Llama-style completions proxy (no streaming)
+app.post("/completions", async (c: Context) => {
+  try {
+    const llamaReq = (await c.req.json()) as LlamaCompletionRequest;
+    // Map Llama request to Copilot payload
+    const copilotPayload = llamaToCopilotPayload(llamaReq);
+    const headers = await getHeaders();
+    // Call Copilot backend
+    const upstream = await fetch(
+      "https://api.githubcopilot.com/chat/completions",
+      { method: "POST", headers, body: JSON.stringify(copilotPayload) },
+    );
+    const text = await upstream.text();
+    if (!upstream.ok) {
+      return c.json(
+        { error: { message: text, code: upstream.status } },
+        upstream.status as unknown as ContentfulStatusCode,
+      );
+    }
+    const copilotResp = JSON.parse(text) as CompletionResponse;
+    const llamaResp = copilotToLlamaResponse(copilotResp);
+    return c.json(llamaResp);
+  } catch (err: any) {
+    logger.error(err);
+    return c.json(
+      { error: { message: String(err), code: 500 } },
+      500 as unknown as ContentfulStatusCode,
+    );
   }
 });
 

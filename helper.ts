@@ -147,12 +147,12 @@ export function shortenText(
   return text.slice(0, maxLength) + "...";
 }
 
-interface Message {
+export interface Message {
   role: string;
   content: string | MessageContent[];
 }
 
-interface MessageContent {
+export interface MessageContent {
   type: string;
   text?: string;
   image_url?: {
