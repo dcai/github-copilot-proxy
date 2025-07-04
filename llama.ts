@@ -15,81 +15,79 @@ import {
 // Simulate Llama-style API for GitHub Copilot
 // https://github.com/ollama/ollama/blob/main/docs/api.md
 
-// Llama-style request shape
-export interface LlamaCompletionRequest {
-  prompt: string;
-  max_tokens?: number;
-  temperature?: number;
-  top_p?: number;
-  model?: string;
+export type OllamaMessage = {
+  content: string;
+  role: "user" | "assistant" | "system";
+};
+export interface OllamaCompletionRequest {
+  messages: OllamaMessage[];
+  stream: boolean;
+  model: string;
 }
 
 // Llama-style response shape
-export interface LlamaCompletionResponse {
-  id: string;
-  object: string;
-  created: number;
-  model?: string;
-  choices: Array<{
-    text: string;
-    index: number;
-    logprobs?: any;
-    finish_reason?: string;
-  }>;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
+export interface OllamaCompletionResponse {
+  model: string;
+  created?: string;
+  message?: OllamaMessage;
+  messages?: OllamaMessage[];
+  done: boolean;
+  done_reason: "stop" | "length" | "content_filter" | "tool_use";
+  total_duration?: number;
+  load_duration?: number;
+  prompt_eval_count?: number;
+  prompt_eval_duration?: number;
+  eval_count?: number;
+  eval_duration?: number;
 }
 
 // Convert Llama request to Copilot chat payload
 export function llamaToCopilotPayload(
-  req: LlamaCompletionRequest,
+  req: OllamaCompletionRequest,
 ): ChatCompletionPayload {
-  const messages = [{ role: "user", content: req.prompt } as Message];
   return {
-    model: req.model || "gpt-4.1", // default model
-    temperature: req.temperature,
-    top_p: req.top_p,
-    messages,
+    model: "gpt-4.1", // default model
+    messages: req.messages.map((msg) => {
+      return {
+        content: msg.content,
+        role: msg.role,
+      };
+    }),
   };
 }
 
 // Convert Copilot response to Llama-style response
 export function copilotToLlamaResponse(
   resp: CompletionResponse,
-): LlamaCompletionResponse {
+): OllamaCompletionResponse {
   const choice = resp.choices?.[0];
   const text = choice?.message?.content || "";
   // Simple token count approximation by splitting on whitespace
   const tokenCount = text.split(/\s+/).filter(Boolean).length;
   return {
-    id: resp.id,
-    object: "text_completion",
-    created: resp.created,
-    model: resp.model,
-    choices: [
-      {
-        text,
-        index: choice?.index ?? 0,
-        finish_reason: choice?.finish_reason,
-      },
-    ],
-    usage: {
-      prompt_tokens: 0,
-      completion_tokens: tokenCount,
-      total_tokens: tokenCount,
+    model: "llama",
+    created: new Date().toISOString(),
+    message: {
+      content: text,
+      "role": "assistant",
     },
+    done_reason: "stop",
+    done: true,
+    "total_duration": 4883583458,
+    "load_duration": 1334875,
+    "prompt_eval_count": 26,
+    "prompt_eval_duration": 342546000,
+    "eval_count": 282,
+    "eval_duration": 4535599000,
   };
 }
 
 export const llamaRoutes = new Hono();
 
 // Llama-style completions proxy (no streaming)
-llamaRoutes.post("/completions", async (c: Context) => {
+llamaRoutes.post("/api/chat", async (c: Context) => {
   try {
-    const llamaReq = (await c.req.json()) as LlamaCompletionRequest;
+    const llamaReq = (await c.req.json()) as OllamaCompletionRequest;
     // Map Llama request to Copilot payload
     const copilotPayload = llamaToCopilotPayload(llamaReq);
     const headers = await getHeaders();
@@ -99,6 +97,10 @@ llamaRoutes.post("/completions", async (c: Context) => {
       { method: "POST", headers, body: JSON.stringify(copilotPayload) },
     );
     const text = await upstream.text();
+    console.info(
+      "🤔 ///// llama.ts @ LINE 105",
+      JSON.stringify(JSON.parse(text), null, 1),
+    );
     if (!upstream.ok) {
       return c.json(
         { error: { message: text, code: upstream.status } },
@@ -107,6 +109,10 @@ llamaRoutes.post("/completions", async (c: Context) => {
     }
     const copilotResp = JSON.parse(text) as CompletionResponse;
     const llamaResp = copilotToLlamaResponse(copilotResp);
+    console.info(
+      "🤔 ///// llama.ts @ LINE 97",
+      JSON.stringify(llamaResp, null, 1),
+    );
     return c.json(llamaResp);
   } catch (err: any) {
     logger.error(err);
@@ -121,8 +127,8 @@ llamaRoutes.get("/api/tags", async (c: Context) => {
   return c.json({
     models: [
       {
-        "name": "llama2:latest",
-        "model": "llama2:latest",
+        "name": "llama",
+        "model": "llama",
         "modified_at": "2023-12-07T09:32:18.757212583Z",
         "size": 3825819519,
         "digest":
@@ -132,7 +138,7 @@ llamaRoutes.get("/api/tags", async (c: Context) => {
           "format": "gguf",
           "family": "llama",
           "families": ["llama"],
-          "parameter_size": "7B",
+          "parameter_size": "671B",
           "quantization_level": "Q4_0",
         },
       },
@@ -176,5 +182,14 @@ llamaRoutes.post("/api/show", async (c: Context) => {
       "llama.vocab_size": 32000,
       "tokenizer.ggml.model": "llama",
     },
+    "capabilities": [
+      "completion",
+      "vision",
+      "chat",
+      "embeddings",
+      "function-calling",
+      "tool-use",
+      "tools",
+    ],
   });
 });
