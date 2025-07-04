@@ -77,7 +77,6 @@ app.get("/v1/models", async (c: Context) => {
 });
 
 app.post("/query", async (c: Context) => {
-  logger.info("/query");
   const { system, user } = (await c.req.json()) as {
     system: string;
     user: string;
@@ -91,6 +90,7 @@ app.post("/query", async (c: Context) => {
     ],
     stream: false,
   };
+  logger.info(`/query: ${user}`, "[ASKING]");
 
   try {
     const response = await fetch(
@@ -105,8 +105,10 @@ app.post("/query", async (c: Context) => {
     const text = await response.text();
     const json = JSON.parse(text) as CompletionResponse;
 
+    const answer = json?.choices?.[0]?.message?.content || "No answer found";
+    logger.info(`/query answer: ${answer}`);
     return c.json({
-      answer: json?.choices?.[0]?.message?.content || "No answer found",
+      answer,
     });
   } catch (e) {
     return c.json({ error: `something bad happened: ${String(e)}` }, 500);
