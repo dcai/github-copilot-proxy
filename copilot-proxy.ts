@@ -76,6 +76,43 @@ app.get("/v1/models", async (c: Context) => {
   return c.json((await response.json()) as ModelsListResponse);
 });
 
+app.post("/query", async (c: Context) => {
+  logger.info("/query");
+  const { system, user } = (await c.req.json()) as {
+    system: string;
+    user: string;
+  };
+  const headers = await getHeaders({ visionRequest: false });
+  const payload: ChatCompletionPayload = {
+    model: "gpt-4.1",
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    stream: false,
+  };
+
+  try {
+    const response = await fetch(
+      "https://api.githubcopilot.com/chat/completions",
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      },
+    );
+
+    const text = await response.text();
+    const json = JSON.parse(text) as CompletionResponse;
+
+    return c.json({
+      answer: json?.choices?.[0]?.message?.content || "No answer found",
+    });
+  } catch (e) {
+    return c.json({ error: `something bad happened: ${String(e)}` }, 500);
+  }
+});
+
 app.post("/v1/chat/completions", async (c: Context) => {
   try {
     const payload = (await c.req.json()) as ChatCompletionPayload;

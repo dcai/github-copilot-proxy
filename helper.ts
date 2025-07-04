@@ -206,6 +206,8 @@ export interface CompletionResponse {
   }>;
   usage?: {
     total_tokens?: number;
+    prompt_tokens?: number;
+    completion_tokens?: number;
   };
 }
 export type ModelType = {
