@@ -90,7 +90,8 @@ app.post("/query", async (c: Context) => {
     ],
     stream: false,
   };
-  logger.info(`/query: ${user}`, "[ASKING]");
+  logger.info(`/query: ${system}`);
+  logger.info(`/query: ${user}`);
 
   try {
     const response = await fetch(
