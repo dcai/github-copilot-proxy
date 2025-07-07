@@ -126,7 +126,6 @@ app.post("/v1/chat/completions", async (c: Context) => {
     console.info(chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"));
     console.info("[USER] Prompt:");
     console.info(chalk.red(findUserMessageContent(payload)?.[0]));
-    logger.info("Prompts sent", "[ASKING]");
     logger.info(payload.model, "[MODEL]");
 
     const response = await fetch(
