@@ -176,10 +176,10 @@ export type FilterType = {
 export interface CompletionResponse {
   // "id": "chatcmpl-BmYQcqNEYLw3gfKhw1BWfggoipsvP",
   id: string;
+  // object: "chat.completion";
+  object: string;
   // "created": 1750911786,
   created: number;
-  // "system_fingerprint": "fp_07e970ab25"
-  system_fingerprint: string;
   // "model": "gpt-4.1-2025-04-14",
   model?: string;
   choices?: Array<{
@@ -209,6 +209,9 @@ export interface CompletionResponse {
     prompt_tokens?: number;
     completion_tokens?: number;
   };
+  // "system_fingerprint": "fp_07e970ab25"
+  system_fingerprint: string;
+  service_tier?: string; // 'auto'
 }
 export type ModelType = {
   id: string;

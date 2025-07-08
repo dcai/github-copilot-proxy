@@ -143,6 +143,7 @@ app.post("/v1/chat/completions", async (c: Context) => {
         const json = JSON.parse(text) as CompletionResponse;
         const unixts = Math.floor(Date.now() / 1000);
         json.created = unixts;
+        json.object = "chat.completion";
         logger.info(
           {
             stream,
