@@ -2,6 +2,7 @@ import type { CopilotUsageResponse, CopilotQuotaSnapshot } from "./types";
 
 const BLUE = "#3498db";
 const GREEN = "#568203";
+const RED = "#e74c3c";
 
 function ProgressBar({
   unlimited,
@@ -29,7 +30,7 @@ function ProgressBar({
         <div
           style={{
             width: `${percent}%`,
-            background: percent > 90 ? "#e74c3c" : GREEN,
+            background: percent > 90 ? RED : GREEN,
             height: "100%",
             borderRadius: "8px",
             transition: "width 0.3s",
