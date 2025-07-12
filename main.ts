@@ -5,7 +5,6 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { bearerAuth } from "hono/bearer-auth";
 import { streamSSE } from "hono/streaming";
-// import { logger as honoLogger } from "hono/logger";
 import { cors } from "hono/cors";
 import { hostname } from "os";
 import {
@@ -20,6 +19,7 @@ import packageJson from "./package.json";
 import type {
   ChatCompletionPayload,
   CompletionResponse,
+  CopilotUsageResponse,
   ModelsListResponse,
 } from "./types.ts";
 
@@ -67,14 +67,28 @@ app.get("/health", async (c: Context) => {
   return c.text("ok");
 });
 
-app.get("/v1/models", async (c: Context) => {
+const usageHandler = async (c: Context) => {
+  const response = await fetch("https://api.github.com/copilot_internal/user", {
+    method: "GET",
+    headers: await getHeaders({ token: process.env.COPILOT_OAUTH_TOKEN }),
+  });
+  // console.info(await response.text());
+  // return c.text("hello");
+  return c.json((await response.json()) as CopilotUsageResponse);
+};
+
+app.get("/usage", usageHandler);
+
+const modelsHandler = async (c: Context) => {
   const response = await fetch("https://api.githubcopilot.com/models", {
     method: "GET",
     headers: await getHeaders(),
   });
   logger.info(`fetched models`);
   return c.json((await response.json()) as ModelsListResponse);
-});
+};
+app.get("/v1/models", modelsHandler);
+app.get("/models", modelsHandler);
 
 app.post("/query", async (c: Context) => {
   const { system, user } = (await c.req.json()) as {
@@ -116,7 +130,7 @@ app.post("/query", async (c: Context) => {
   }
 });
 
-app.post("/v1/chat/completions", async (c: Context) => {
+const chatCompletionHandler = async (c: Context) => {
   try {
     const payload = (await c.req.json()) as ChatCompletionPayload;
     const visionRequest: boolean = hasImageInRequestBody(payload);
@@ -205,7 +219,9 @@ app.post("/v1/chat/completions", async (c: Context) => {
     logger.error(err);
     return c.json({ error: `something bad happened: ${String(err)}` }, 500);
   }
-});
+};
+app.post("/v1/chat/completions", chatCompletionHandler);
+app.post("/chat/completions", chatCompletionHandler);
 
 app.route("/ollama", ollamaApiRoutes);
 
