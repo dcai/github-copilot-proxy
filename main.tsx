@@ -22,6 +22,7 @@ import type {
   CopilotUsageResponse,
   ModelsListResponse,
 } from "./types.ts";
+import UsagePage from "./UsagePage";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
 const host: string = process.env.GHC_HOST || "0.0.0.0";
@@ -72,12 +73,12 @@ const usageHandler = async (c: Context) => {
     method: "GET",
     headers: await getHeaders({ token: process.env.COPILOT_OAUTH_TOKEN }),
   });
-  // console.info(await response.text());
-  // return c.text("hello");
-  return c.json((await response.json()) as CopilotUsageResponse);
+  const usage = await response.json();
+  return c.html(<UsagePage usage={usage} />);
 };
 
 app.get("/usage", usageHandler);
+app.get("/", usageHandler);
 
 const modelsHandler = async (c: Context) => {
   const response = await fetch("https://api.githubcopilot.com/models", {
