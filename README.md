@@ -59,7 +59,7 @@ Key Features:
 
 The project primarily resides in a flat directory structure within the root. Key files include:
 
-- **`copilot-proxy.ts`**: The main entry point for the proxy server. It sets up the Hono server, defines API routes (`/v1/chat/completions`, `/v1/models`), and handles incoming requests by forwarding them to the GitHub Copilot API.
+- **`main.ts`**: The main entry point for the proxy server. It sets up the Hono server, defines API routes (`/v1/chat/completions`, `/v1/models`), and handles incoming requests by forwarding them to the GitHub Copilot API.
 - **`helper.ts`**: Contains utility functions and classes used across the project. This includes:
   - `TokenManager`: Manages authentication tokens for the GitHub Copilot API.
   - `getHeaders`: Constructs HTTP headers for API requests.
@@ -77,7 +77,7 @@ The project primarily resides in a flat directory structure within the root. Key
 
 ## Guide to Navigate the Project
 
-- **API Endpoint Definitions and Core Logic**: Look into `copilot-proxy.ts`. This file contains the Hono app setup and the handlers for `/v1/chat/completions` and `/v1/models`.
+- **API Endpoint Definitions and Core Logic**: Look into `main.ts`. This file contains the Hono app setup and the handlers for `/v1/chat/completions` and `/v1/models`.
 - **Helper Functions, Token Management, and Utilities**: Explore `helper.ts`. This is where you'll find the `TokenManager` class, header generation logic, logging configuration, and various utility functions.
 - **Authentication Setup**: If you need to understand how the OAuth token is obtained, refer to `setup.js`.
 - **Dependencies and Scripts**: Check `package.json` for a list of project dependencies and available run scripts.
@@ -99,7 +99,7 @@ The project primarily resides in a flat directory structure within the root. Key
 The project implements a proxy server pattern. It acts as an intermediary between a client application (e.g., an IDE plugin or a script using an OpenAI-compatible API) and the GitHub Copilot API.
 
 1.  **Client**: Sends requests (e.g., for chat completions or model listings) to the proxy server, typically formatted like OpenAI API requests.
-2.  **Proxy Server (`copilot-proxy.ts` with Hono)**:
+2.  **Proxy Server (`main.ts` with Hono)**:
     - Listens for incoming HTTP requests on a configured port and host.
     - Parses the incoming request.
     - Uses `TokenManager` (from `helper.ts`) to obtain a valid GitHub Copilot authentication token. This token is cached and refreshed as needed.
