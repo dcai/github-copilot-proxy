@@ -1,25 +1,44 @@
 import type { CopilotUsageResponse, CopilotQuotaSnapshot } from "./types";
 
-function ProgressBar({ percent }: { percent: number }) {
+const BLUE = "#3498db";
+const GREEN = "#568203";
+
+function ProgressBar({
+  unlimited,
+  percent,
+}: { percent: number; unlimited?: boolean }) {
+  const centerStyle = {
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+  const outerStyle = {
+    width: "100%",
+    background: unlimited ? BLUE : "#eee",
+    borderRadius: "8px",
+    height: "24px",
+    marginBottom: "8px",
+    ...(unlimited && centerStyle),
+  };
   return (
-    <div
-      style={{
-        width: "100%",
-        background: "#eee",
-        borderRadius: "8px",
-        height: "24px",
-        marginBottom: "8px",
-      }}
-    >
-      <div
-        style={{
-          width: `${percent}%`,
-          background: percent > 90 ? "#e74c3c" : "#3498db",
-          height: "100%",
-          borderRadius: "8px",
-          transition: "width 0.3s",
-        }}
-      />
+    <div style={outerStyle}>
+      {unlimited ? (
+        "Unlimited"
+      ) : (
+        <div
+          style={{
+            width: `${percent}%`,
+            background: percent > 90 ? "#e74c3c" : GREEN,
+            height: "100%",
+            borderRadius: "8px",
+            transition: "width 0.3s",
+            ...centerStyle,
+          }}
+        >
+          {unlimited ? "" : `${percent.toFixed(2)}% used`}
+        </div>
+      )}
     </div>
   );
 }
@@ -31,17 +50,19 @@ function UsageDetails({
   return (
     <section style={{ marginBottom: "24px" }}>
       <h2>{label} Usage</h2>
-      <ProgressBar percent={100 - quota.percent_remaining} />
+      <ProgressBar
+        unlimited={quota.unlimited}
+        percent={100 - quota.percent_remaining}
+      />
       <ul>
         <li>
-          Used: <strong>{Math.round(100 - quota.percent_remaining)}%</strong>
+          Used: <strong>{(100 - quota.percent_remaining)?.toFixed(2)}%</strong>
         </li>
         <li>
-          Entitlement: {quota.unlimited ? "Unlimited" : quota.entitlement}
+          Entitlement:{" "}
+          {quota.unlimited ? "Unlimited" : String(quota.entitlement)}
         </li>
         <li>Remaining: {quota.remaining}</li>
-        <li>Overage Permitted: {quota.overage_permitted ? "Yes" : "No"}</li>
-        <li>Overage Count: {quota.overage_count}</li>
         <li>Last Updated: {new Date(quota.timestamp_utc).toLocaleString()}</li>
       </ul>
     </section>
@@ -65,7 +86,7 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
           ul { list-style: none; padding: 0; }
           li { margin-bottom: 4px; }
           footer { text-align: center; padding: 1em; background: #fff; color: #888; margin-top: 32px; }
-          code { padding: 1em; background: #fff; color: green; }
+          code {margin-top: 2em;display: block; padding: 1em; background: #fff; color: ${GREEN}; }
         `}</style>
       </head>
       <body>
