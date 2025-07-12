@@ -2,9 +2,9 @@
   "name": "github-copilot-proxy",
   "version": "1.0.0",
   "type": "module",
-  "main": "copilot-proxy.ts",
+  "main": "main.ts",
   "scripts": {
-    "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 bun --bun --watch copilot-proxy.ts",
+    "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 bun --bun --watch main.ts",
     "build": "bun build --target=node ./copilot-proxy.ts --outdir ./dist --minify --production --sourcemap=none"
   },
   "engines": {
