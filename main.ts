@@ -1,9 +1,10 @@
 import * as Sentry from "@sentry/bun";
 import chalk from "chalk";
+import { events } from "fetch-event-stream";
 import type { Context } from "hono";
-
 import { Hono } from "hono";
 import { bearerAuth } from "hono/bearer-auth";
+import { streamSSE } from "hono/streaming";
 // import { logger as honoLogger } from "hono/logger";
 import { cors } from "hono/cors";
 import { hostname } from "os";
@@ -13,15 +14,14 @@ import {
   getHeaders,
   hasImageInRequestBody,
   logger,
-  makeReadableStream,
 } from "./helper";
+import { ollamaApiRoutes } from "./ollama";
+import packageJson from "./package.json";
 import type {
   ChatCompletionPayload,
   CompletionResponse,
   ModelsListResponse,
-} from "./helper.ts";
-import { ollamaApiRoutes } from "./ollama";
-import packageJson from "./package.json";
+} from "./types.ts";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
 const host: string = process.env.GHC_HOST || "0.0.0.0";
@@ -174,15 +174,33 @@ app.post("/v1/chat/completions", async (c: Context) => {
         );
       }
     }
+    // END of non-streaming response
 
-    const streamResponse = makeReadableStream(response.body.getReader(), false);
-    return new Response(streamResponse, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-      },
+    return streamSSE(c, async (stream) => {
+      const openaiEvents = events(response);
+      for await (const rawEvent of openaiEvents) {
+        if (rawEvent.data === "[DONE]") {
+          break;
+        }
+
+        if (!rawEvent.data) {
+          continue;
+        }
+
+        // const chunk = JSON.parse(rawEvent.data);
+        await stream.writeSSE({
+          data: rawEvent.data,
+        });
+      }
     });
+    // const streamResponse = makeReadableStream(response.body.getReader(), false);
+    // return new Response(streamResponse, {
+    //   headers: {
+    //     "Content-Type": "text/event-stream",
+    //     "Cache-Control": "no-cache",
+    //     "Connection": "keep-alive",
+    //   },
+    // });
   } catch (err) {
     logger.error(err);
     return c.json({ error: `something bad happened: ${String(err)}` }, 500);

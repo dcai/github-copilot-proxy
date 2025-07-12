@@ -1,6 +1,8 @@
-import type { ChatCompletionPayload, CompletionResponse } from "./helper";
 import { ContentfulStatusCode } from "hono/utils/http-status";
-import type { Message } from "./helper";
+import type {
+  ChatCompletionPayload,
+  CompletionResponse,
+} from "./types.ts";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import {

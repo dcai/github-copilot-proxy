@@ -1,5 +1,6 @@
 import { join } from "path";
 import pino from "pino";
+import { ChatCompletionPayload } from "./types";
 
 const logLevel = process.env.LOG_LEVEL || "debug";
 
@@ -146,88 +147,6 @@ export function shortenText(
 
   return text.slice(0, maxLength) + "...";
 }
-
-export interface Message {
-  role: string;
-  content: string | MessageContent[];
-}
-
-export interface MessageContent {
-  type: string;
-  text?: string;
-  image_url?: {
-    url: string;
-  };
-}
-
-export interface ChatCompletionPayload {
-  model: string;
-  temperature?: number;
-  top_p?: number;
-  service_tier?: string; // 'auto'
-  stream?: boolean;
-  messages?: Message[];
-}
-
-export type FilterType = {
-  filtered: boolean;
-  severity: "safe" | "low" | "medium" | "high" | "critical";
-};
-export interface CompletionResponse {
-  // "id": "chatcmpl-BmYQcqNEYLw3gfKhw1BWfggoipsvP",
-  id: string;
-  // object: "chat.completion";
-  object: string;
-  // "created": 1750911786,
-  created: number;
-  // "model": "gpt-4.1-2025-04-14",
-  model?: string;
-  choices?: Array<{
-    finish_reason?: string;
-    index?: number;
-    content_filter_offsets?: {
-      check_offset: number;
-      start_offset: number;
-      end_offset: number;
-    };
-    content_filter_results?: {
-      hate?: FilterType;
-      self_harm?: FilterType;
-      sexual?: FilterType;
-      violence?: FilterType;
-    };
-    delta?: {
-      content: string;
-    };
-    message?: {
-      content: string;
-      role: string;
-    };
-  }>;
-  usage?: {
-    total_tokens?: number;
-    prompt_tokens?: number;
-    completion_tokens?: number;
-  };
-  // "system_fingerprint": "fp_07e970ab25"
-  system_fingerprint: string;
-  service_tier?: string; // 'auto'
-}
-export type ModelType = {
-  id: string;
-  name: string;
-  version: string;
-};
-
-export type TokenResponse = {
-  token: string;
-  expires_at: number;
-  endpoints?: { api?: string };
-};
-
-export type ModelsListResponse = {
-  data: ModelType[];
-};
 
 export function extractOneMessage(msg: Message) {
   if (Array.isArray(msg?.content)) {
