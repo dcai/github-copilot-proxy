@@ -23,7 +23,6 @@ async function getDeviceCode() {
     method: "POST",
     headers: commonHeaders,
     body: raw,
-    redirect: "follow",
   };
 
   const data = await fetch(
@@ -46,7 +45,6 @@ async function getAccessToken(deviceCode) {
     method: "POST",
     headers: commonHeaders,
     body: raw,
-    redirect: "follow",
   };
 
   return await fetch(

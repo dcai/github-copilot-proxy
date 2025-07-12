@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "lib": ["dom", "esnext"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",
