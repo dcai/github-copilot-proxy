@@ -4,8 +4,8 @@ import { events } from "fetch-event-stream";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { bearerAuth } from "hono/bearer-auth";
-import { streamSSE } from "hono/streaming";
 import { cors } from "hono/cors";
+import { streamSSE } from "hono/streaming";
 import { hostname } from "os";
 import {
   findSystemMessageContent,
@@ -19,7 +19,6 @@ import packageJson from "./package.json";
 import type {
   ChatCompletionPayload,
   CompletionResponse,
-  CopilotUsageResponse,
   ModelsListResponse,
 } from "./types.ts";
 import UsagePage from "./UsagePage";

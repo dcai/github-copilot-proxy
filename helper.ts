@@ -1,6 +1,11 @@
 import { join } from "path";
 import pino from "pino";
-import { ChatCompletionPayload } from "./types";
+import {
+  ChatCompletionPayload,
+  CompletionResponse,
+  Message,
+  TokenResponse,
+} from "./types";
 
 const logLevel = process.env.LOG_LEVEL || "debug";
 
