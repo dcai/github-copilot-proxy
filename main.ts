@@ -194,22 +194,11 @@ app.route("/ollama", ollamaApiRoutes);
 app.notFound(async (c: Context) => {
   const method = c.req.method;
   const path = c.req.path;
-  let body: any = undefined;
-  try {
-    body = await c.req.json();
-  } catch (e) {
-    // Not a JSON body or no body
-    body = undefined;
-  }
-  logger.warn(
-    `Not found: ${method} ${path}` +
-      (body ? ` | Body: ${JSON.stringify(body)}` : ""),
-  );
-  return c.text(
-    `Not found: ${method} ${path}` +
-      (body ? `\nBody: ${JSON.stringify(body)}` : ""),
-    404,
-  );
+  const text = await c.req.text();
+  const message =
+    `Not found: ${method} ${path}` + (text ? ` | Body: ${text}` : "");
+  logger.warn(message);
+  return c.text(message, 404);
 });
 
 logger.info(

@@ -378,10 +378,11 @@ export function makeReadableStream(
   });
 }
 
+function pad(n: number, l: number) {
+  return n.toString().padStart(l, "0");
+}
+
 export function dateToMicroISO(d = new Date()) {
-  function pad(n: number, l: number) {
-    return n.toString().padStart(l, "0");
-  }
   return (
     d.getUTCFullYear() +
     "-" +
