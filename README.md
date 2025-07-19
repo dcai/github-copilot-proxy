@@ -116,15 +116,15 @@ The `setup.js` script is a utility to perform the initial OAuth device flow to g
 
 ```mermaid
 graph TD
-    Client[Client Application (e.g., IDE, Script)] -->|HTTP Request (OpenAI format)| ProxyServer{GitHub Copilot Proxy Server (Bun + Hono)};
-    ProxyServer -->|Uses| HelperUtils[helper.ts: TokenManager, getHeaders, Logging];
-    HelperUtils -->|Fetches/Refreshes Token| GitHubAuthAPI[GitHub OAuth API for Tokens];
-    ProxyServer -->|Proxied Request with Auth| CopilotAPI[GitHub Copilot API];
-    CopilotAPI -->|API Response/Stream| ProxyServer;
-    ProxyServer -->|HTTP Response/Stream| Client;
-    SentryDSN{{SENTRY_DSN?}} -- Optional --> SentryService[Sentry.io];
-    ProxyServer -.->|Sends Errors/Breadcrumbs if SENTRY_DSN set| SentryService;
-    SetupScript[setup.js] -->|Device Flow| GitHubAuthAPI;
-    SetupScript -->|Saves Token to .env| DotEnvFile[.env File];
-    DotEnvFile -->|Loads Token| HelperUtils;
+    Client["Client Application (e.g., IDE, Script)"] -->|"HTTP Request (OpenAI format)"| ProxyServer{"GitHub Copilot Proxy Server (Bun + Hono)"};
+    ProxyServer -->|"Uses"| HelperUtils["helper.ts: TokenManager, getHeaders, Logging"];
+    HelperUtils -->|"Fetches/Refreshes Token"| GitHubAuthAPI["GitHub OAuth API for Tokens"];
+    ProxyServer -->|"Proxied Request with Auth"| CopilotAPI["GitHub Copilot API"];
+    CopilotAPI -->|"API Response/Stream"| ProxyServer;
+    ProxyServer -->|"HTTP Response/Stream"| Client;
+    SentryDSN{{"SENTRY_DSN?"}} -- Optional --> SentryService["Sentry.io"];
+    ProxyServer -.->|"Sends Errors/Breadcrumbs if SENTRY_DSN set"| SentryService;
+    SetupScript["setup.js"] -->|"Device Flow"| GitHubAuthAPI;
+    SetupScript -->|"Saves Token to .env"| DotEnvFile[".env File"];
+    DotEnvFile -->|"Loads Token"| HelperUtils;
 ```
