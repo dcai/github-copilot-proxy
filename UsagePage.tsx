@@ -86,7 +86,7 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
           section { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 16px; margin-bottom: 24px; }
           ul { list-style: none; padding: 0; }
           li { margin-bottom: 4px; }
-          footer { text-align: center; padding: 1em; background: #fff; color: #888; margin-top: 32px; }
+          footer { text-align: left; padding: 1em; background: #fff; color: #888; margin-top: 32px; }
           code {margin-top: 2em;display: block; padding: 1em; background: #fff; color: ${GREEN}; }
         `}</style>
       </head>
@@ -98,7 +98,9 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
         <footer>
           <div>Quota resets: {usage.quota_reset_date}</div>
           <div>Plan: {usage.copilot_plan}</div>
-          <div>Organizations: {usage.organization_list?.join(", ")}</div>
+          {usage.organization_list?.length > 1 && (
+            <div>Organizations: {usage.organization_list?.join(", ")}</div>
+          )}
         </footer>
         <code>
           <pre>{JSON.stringify(usage, null, 2)}</pre>
