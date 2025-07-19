@@ -19,6 +19,7 @@ import packageJson from "./package.json";
 import type {
   ChatCompletionPayload,
   CompletionResponse,
+  EmbeddingResponse,
   ModelsListResponse,
 } from "./types.ts";
 import UsagePage from "./UsagePage";
@@ -52,7 +53,7 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
 }
 
 app.use(
-  "/v1/*",
+  "/*",
   cors(),
   // honoLogger(),
   bearerAuth({
@@ -89,6 +90,31 @@ const modelsHandler = async (c: Context) => {
 };
 app.get("/v1/models", modelsHandler);
 app.get("/models", modelsHandler);
+
+const embeddingsHandler = async (c: Context) => {
+  const payload = (await c.req.json()) as {
+    input: string | string[];
+    model: string;
+  };
+  const headers = await getHeaders({ visionRequest: false });
+  logger.info(`/v1/embeddings: ${JSON.stringify(payload)}`);
+
+  try {
+    const response = await fetch("https://api.githubcopilot.com/embeddings", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    const text = await response.text();
+    const json = JSON.parse(text) as EmbeddingResponse;
+    return c.json(json);
+  } catch (e) {
+    return c.json({ error: `something bad happened: ${String(e)}` }, 500);
+  }
+};
+app.post("/embeddings", embeddingsHandler);
+app.post("/v1/embeddings", embeddingsHandler);
 
 app.post("/query", async (c: Context) => {
   const { system, user } = (await c.req.json()) as {
