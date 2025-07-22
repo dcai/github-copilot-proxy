@@ -53,7 +53,7 @@ function UsageDetails({
 }: { quota: CopilotQuotaSnapshot; label: string; quotaResetDate?: string }) {
   return (
     <section style={{ marginBottom: "24px" }}>
-      <h2>{label} Usage</h2>
+      <h2>{label}</h2>
       <ProgressBar
         unlimited={quota.unlimited}
         percent={100 - quota.percent_remaining}
@@ -102,7 +102,7 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
         <h1>{header}</h1>
         <UsageDetails
           quota={premium}
-          label="Premium Interactions"
+          label="Premium Requests"
           quotaResetDate={usage.quota_reset_date}
         />
         <UsageDetails quota={chat} label="Chat" />
