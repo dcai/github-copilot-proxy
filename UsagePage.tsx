@@ -47,7 +47,8 @@ function ProgressBar({
 function UsageDetails({
   quota,
   label,
-}: { quota: CopilotQuotaSnapshot; label: string }) {
+  quotaResetDate,
+}: { quota: CopilotQuotaSnapshot; label: string; quotaResetDate?: string }) {
   return (
     <section style={{ marginBottom: "24px" }}>
       <h2>{label} Usage</h2>
@@ -65,6 +66,9 @@ function UsageDetails({
         </li>
         <li>Remaining: {quota.remaining}</li>
         <li>Last Updated: {new Date(quota.timestamp_utc).toLocaleString()}</li>
+        {quotaResetDate && (
+          <li>Quota resets: {new Date(quotaResetDate).toLocaleString()}</li>
+        )}
       </ul>
     </section>
   );
@@ -92,7 +96,11 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
       </head>
       <body>
         <h1>Copilot Usage</h1>
-        <UsageDetails quota={premium} label="Premium Interactions" />
+        <UsageDetails
+          quota={premium}
+          label="Premium Interactions"
+          quotaResetDate={usage.quota_reset_date}
+        />
         <UsageDetails quota={chat} label="Chat" />
         <UsageDetails quota={completions} label="Completions" />
         <footer>
