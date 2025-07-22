@@ -3,7 +3,6 @@ import chalk from "chalk";
 import { events } from "fetch-event-stream";
 import type { Context } from "hono";
 import { Hono } from "hono";
-import { bearerAuth } from "hono/bearer-auth";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import { hostname } from "os";
@@ -52,17 +51,11 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
   process.exit(1);
 }
 
-app.use(
-  "/*",
-  cors(),
-  // honoLogger(),
-  bearerAuth({
-    verifyToken: async (token) => {
-      logger.info(`token to identify: ${token}`);
-      return true;
-    },
-  }),
-);
+app.use("/*", cors(), async (c: Context, next) => {
+  const auth = c.req.header("Authorization")?.split(" ")?.[1];
+  console.info(`token to verify: ${auth}`);
+  return next();
+});
 
 app.get("/health", async (c: Context) => {
   return c.text("ok");
