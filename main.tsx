@@ -14,7 +14,6 @@ import {
   logger,
 } from "./helper";
 import { ollamaApiRoutes } from "./ollama";
-import packageJson from "./package.json";
 import type {
   ChatCompletionPayload,
   CompletionResponse,
@@ -32,7 +31,7 @@ if (process.env.SENTRY_DSN) {
     dsn: process.env.SENTRY_DSN,
     serverName: hostname(),
     environment: process.env.NODE_ENV,
-    release: `${packageJson.name}@${packageJson.version}`,
+    release: `github-copilot-proxy@1.0.0`,
     integrations: [
       Sentry.httpIntegration(),
       Sentry.requestDataIntegration(),
