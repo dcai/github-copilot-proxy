@@ -91,7 +91,7 @@ class TokenManager {
   async fetch(): Promise<void> {
     const now = Date.now();
     if (this.token && now < this.expiry) {
-      logger.debug(
+      logger.info(
         `reusing token, will expire in ${msToTime(this.expiry - now)}`,
       );
       return;

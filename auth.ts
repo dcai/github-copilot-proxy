@@ -34,7 +34,7 @@ async function getDeviceCode() {
   return data;
 }
 
-async function getAccessToken(deviceCode) {
+async function getAccessToken(deviceCode: string) {
   const raw = JSON.stringify({
     "client_id": clientId,
     "device_code": deviceCode,
