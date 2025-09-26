@@ -52,7 +52,7 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
 
 app.use("/*", cors(), async (c: Context, next) => {
   const auth = c.req.header("Authorization")?.split(" ")?.[1];
-  console.info(`token to verify: ${auth}`);
+  console.info(`${c.req.path}: token to verify: ${auth}`);
   return next();
 });
 
@@ -151,6 +151,7 @@ app.post("/query", async (c: Context) => {
 const chatCompletionHandler = async (c: Context) => {
   try {
     const payload = (await c.req.json()) as ChatCompletionPayload;
+    const { writeFileSync } = require("node:fs");
     const visionRequest: boolean = hasImageInRequestBody(payload);
     const stream: boolean = payload?.stream || false;
     const headers = await getHeaders({ visionRequest });
@@ -209,6 +210,11 @@ const chatCompletionHandler = async (c: Context) => {
     // END of non-streaming response
 
     return streamSSE(c, async (stream) => {
+      if (!response.ok) {
+        console.error("Upstream error", response.status, response.statusText);
+        console.error(await response.text());
+        return
+      }
       const openaiEvents = events(response);
       for await (const rawEvent of openaiEvents) {
         if (rawEvent.data === "[DONE]") {
