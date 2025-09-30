@@ -19,6 +19,7 @@ import type {
   CompletionResponse,
   EmbeddingResponse,
   ModelsListResponse,
+  ResponsesPayload,
 } from "./types.ts";
 import UsagePage from "./UsagePage";
 
@@ -243,8 +244,32 @@ const chatCompletionHandler = async (c: Context) => {
     return c.json({ error: `something bad happened: ${String(err)}` }, 500);
   }
 };
+const responsesHandler = async (c: Context) => {
+  try {
+    const payload = (await c.req.json()) as ResponsesPayload;
+    const visionRequest: boolean = hasImageInRequestBody(payload);
+    const stream: boolean = payload?.stream || false;
+    const headers = await getHeaders({ visionRequest });
+    console.info("[SYSTEM] Prompt:");
+    console.info(chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"));
+    console.info("[USER] Prompt:");
+    console.info(chalk.red(findUserMessageContent(payload)?.[0]));
+    logger.info(payload.model, "[MODEL]");
+
+    const response = await fetch("https://api.githubcopilot.com/responses", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    logger.error(err);
+    return c.json({ error: `something bad happened: ${String(err)}` }, 500);
+  }
+};
 app.post("/v1/chat/completions", chatCompletionHandler);
 app.post("/chat/completions", chatCompletionHandler);
+app.post("/v1/responses", responsesHandler);
+app.post("/responses", responsesHandler);
 
 app.route("/ollama", ollamaApiRoutes);
 

@@ -7,6 +7,8 @@ export interface GetHeadersOptions {
 }
 
 export interface Message {
+  id?: string;
+  type?: string;
   role: string;
   content: string | MessageContent[];
 }
@@ -26,6 +28,13 @@ export interface ChatCompletionPayload {
   service_tier?: string; // 'auto'
   stream?: boolean;
   messages?: Message[];
+}
+
+export interface ResponsesPayload {
+  model: string;
+  input: string;
+  instructions: string;
+  stream?: boolean;
 }
 
 export type FilterType = {
