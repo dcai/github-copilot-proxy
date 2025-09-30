@@ -1,8 +1,5 @@
 import { ContentfulStatusCode } from "hono/utils/http-status";
-import type {
-  ChatCompletionPayload,
-  CompletionResponse,
-} from "./types.ts";
+import type { ChatCompletionPayload, CompletionResponse } from "./types.ts";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import {

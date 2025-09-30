@@ -151,7 +151,6 @@ app.post("/query", async (c: Context) => {
 const chatCompletionHandler = async (c: Context) => {
   try {
     const payload = (await c.req.json()) as ChatCompletionPayload;
-    const { writeFileSync } = require("node:fs");
     const visionRequest: boolean = hasImageInRequestBody(payload);
     const stream: boolean = payload?.stream || false;
     const headers = await getHeaders({ visionRequest });
@@ -213,7 +212,7 @@ const chatCompletionHandler = async (c: Context) => {
       if (!response.ok) {
         console.error("Upstream error", response.status, response.statusText);
         console.error(await response.text());
-        return
+        return;
       }
       const openaiEvents = events(response);
       for await (const rawEvent of openaiEvents) {

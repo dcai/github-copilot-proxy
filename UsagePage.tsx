@@ -1,4 +1,8 @@
-import type { CopilotUsageResponse, CopilotQuotaSnapshot } from "./types";
+import type {
+  CopilotUsageResponse,
+  CopilotQuotaSnapshot,
+  Organization,
+} from "./types";
 
 import { css, cx, keyframes, Style } from "hono/css";
 
@@ -111,7 +115,12 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
           <div>Quota resets: {usage.quota_reset_date}</div>
           <div>Plan: {usage.copilot_plan}</div>
           {usage.organization_list?.length > 1 && (
-            <div>Organizations: {usage.organization_list?.join(", ")}</div>
+            <div>
+              Organizations:{" "}
+              {usage.organization_list
+                ?.map((org: Organization) => org?.name)
+                .join(", ")}
+            </div>
           )}
         </footer>
         <code>

@@ -125,6 +125,8 @@ export type CopilotQuotaSnapshot = {
   timestamp_utc: string;
 };
 
+export type Organization = { name: string; login: string };
+
 export type CopilotUsageResponse = {
   access_type_sku: string;
   analytics_tracking_id: string;
@@ -133,7 +135,7 @@ export type CopilotUsageResponse = {
   chat_enabled: boolean;
   copilot_plan: string;
   organization_login_list: string[]; // array of organization logins
-  organization_list: string[]; // array of organization names/IDs
+  organization_list: Organization[]; // array of organization names/IDs
   quota_reset_date: string;
   quota_snapshots: {
     chat: CopilotQuotaSnapshot;
