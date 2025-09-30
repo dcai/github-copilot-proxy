@@ -4,7 +4,7 @@ import type {
   Organization,
 } from "./types";
 
-import { css, cx, keyframes, Style } from "hono/css";
+import { css, Style } from "hono/css";
 
 const BLUE = "#3498db";
 const GREEN = "#568203";
@@ -13,7 +13,10 @@ const RED = "#e74c3c";
 function ProgressBar({
   unlimited,
   percent,
-}: { percent: number; unlimited?: boolean }) {
+}: {
+  percent: number;
+  unlimited?: boolean;
+}) {
   const centerStyle = {
     color: "#fff",
     display: "flex",
@@ -54,7 +57,11 @@ function UsageDetails({
   quota,
   label,
   quotaResetDate,
-}: { quota: CopilotQuotaSnapshot; label: string; quotaResetDate?: string }) {
+}: {
+  quota: CopilotQuotaSnapshot;
+  label: string;
+  quotaResetDate?: string;
+}) {
   return (
     <section style={{ marginBottom: "24px" }}>
       <h2>{label}</h2>
@@ -88,7 +95,7 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
   const header = "Copilot Usage Details";
 
   return (
-    <html>
+    <html lang="en">
       <head>
         <title>{header}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />

@@ -3,4 +3,4 @@ NODE_ENV="development"
 JSFIXER='biome'
 
 [tools]
-biome = "1"
+biome = "2"
