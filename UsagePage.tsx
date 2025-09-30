@@ -121,7 +121,7 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
         <footer>
           <div>Quota resets: {usage.quota_reset_date}</div>
           <div>Plan: {usage.copilot_plan}</div>
-          {usage.organization_list?.length > 1 && (
+          {usage.organization_list?.length > 0 && (
             <div>
               Organizations:{" "}
               {usage.organization_list
