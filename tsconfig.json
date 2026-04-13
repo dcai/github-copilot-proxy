@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "lib": ["dom", "esnext"],
+    "types": ["bun"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",
