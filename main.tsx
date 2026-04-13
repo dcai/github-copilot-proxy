@@ -24,7 +24,7 @@ import type {
 import UsagePage from "./UsagePage";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
-const host: string = process.env.GHC_HOST || "0.0.0.0";
+const host: string = process.env.GHC_HOST || "127.0.0.1";
 const app: Hono = new Hono();
 
 if (process.env.SENTRY_DSN) {
