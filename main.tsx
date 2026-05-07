@@ -159,7 +159,6 @@ const chatCompletionHandler = async (c: Context) => {
     console.info(chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"));
     console.info("[USER] Prompt:");
     console.info(chalk.red(findUserMessageContent(payload)?.[0]));
-    logger.info(payload.model, "[MODEL]");
 
     const response = await fetch(
       "https://api.githubcopilot.com/chat/completions",
@@ -177,14 +176,10 @@ const chatCompletionHandler = async (c: Context) => {
         const unixts = Math.floor(Date.now() / 1000);
         json.created = unixts;
         json.object = "chat.completion";
-        logger.info(
-          {
-            stream,
-            // json,
-            answer: json?.choices?.[0]?.message?.content,
-          },
-          "[DONE]",
-        );
+        const answerText = json?.choices?.[0]?.message?.content;
+        console.info("======= BEGIN =======");
+        console.info(chalk.blue(`${answerText || "No message content found"}`));
+        console.info("======== END ========");
         return c.json(json);
       } catch (e) {
         logger.error(
