@@ -164,7 +164,7 @@ export function debugPrint(body: string, title = "DEBUG"): void {
 
   console.info(centeredFence(title));
   console.info(body);
-  console.info(centeredFence("END"));
+  console.info(centeredFence(`${title} END`));
 }
 
 export function shortenText(

@@ -158,11 +158,11 @@ const chatCompletionHandler = async (c: Context) => {
     const headers = await getHeaders({ visionRequest });
     debugPrint(
       chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"),
-      "SYSTEM",
+      "SYSTEM Prompt",
     );
     debugPrint(
       chalk.red(findUserMessageContent(payload)?.[0] || "N/A"),
-      "USER",
+      "USER Prompt",
     );
 
     const response = await fetch(
@@ -184,7 +184,7 @@ const chatCompletionHandler = async (c: Context) => {
         const answerText = json?.choices?.[0]?.message?.content;
         debugPrint(
           chalk.blue(`${answerText || "No message content found"}`),
-          "ANSWER",
+          "LLM Response",
         );
         return c.json(json);
       } catch (e) {
