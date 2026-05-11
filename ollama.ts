@@ -1,30 +1,36 @@
-import { ContentfulStatusCode } from "hono/utils/http-status";
-import type { ChatCompletionPayload, CompletionResponse } from "./types.ts";
+import { events } from "fetch-event-stream";
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { ContentfulStatusCode } from "hono/utils/http-status";
 import { dateToMicroISO, debugPrint, getHeaders, logger } from "./helper";
+import type {
+  ChatCompletionPayload,
+  CompletionResponse,
+  MessageContent,
+} from "./types.ts";
 
 // Simulate Llama-style API for GitHub Copilot
 // https://github.com/ollama/ollama/blob/main/docs/api.md
 
 export type OllamaMessage = {
   content: string;
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant" | "system" | "tool";
+  images?: string[];
 };
+
 export interface OllamaChatRequest {
   messages: OllamaMessage[];
-  stream: boolean;
+  stream?: boolean;
   model: string;
 }
 
 // Llama-style response shape
 export interface OllamaCompletionResponse {
   model: string;
-  created?: string;
-  message?: OllamaMessage;
-  messages?: OllamaMessage[];
+  created_at: string;
+  message: OllamaMessage;
   done: boolean;
-  done_reason: "stop" | "length" | "content_filter" | "tool_use";
+  done_reason?: "stop" | "length" | "content_filter" | "tool_use";
   total_duration?: number;
   load_duration?: number;
   prompt_eval_count?: number;
@@ -33,13 +39,44 @@ export interface OllamaCompletionResponse {
   eval_duration?: number;
 }
 
+function getOllamaModelName(req: OllamaChatRequest): string {
+  return req.model || "llama";
+}
+
+function getOpenAiModelName(_req: OllamaChatRequest): string {
+  return "gpt-4.1";
+}
+
 // Convert Llama request to Copilot chat payload
 export function llamaToCopilotPayload(
   req: OllamaChatRequest,
 ): ChatCompletionPayload {
+  const stream = req.stream !== false;
+
   return {
-    model: "gpt-4.1", // default model
+    model: getOpenAiModelName(req),
+    stream,
     messages: req.messages.map((msg) => {
+      if (msg.images?.length) {
+        return {
+          role: msg.role,
+          content: [
+            {
+              type: "text",
+              text: msg.content,
+            },
+            ...msg.images.map((image) => {
+              return {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/png;base64,${image}`,
+                },
+              };
+            }),
+          ],
+        };
+      }
+
       return {
         content: msg.content,
         role: msg.role,
@@ -48,66 +85,208 @@ export function llamaToCopilotPayload(
   };
 }
 
-// Convert Copilot response to Llama-style response
-export function copilotToOllamaStreamResponse(
-  openAiResponse: CompletionResponse,
+function extractTextContent(
+  content: string | MessageContent[] | undefined,
 ): string {
-  const choice = openAiResponse.choices?.[0];
-  const text = choice?.message?.content || "";
+  if (!content) {
+    return "";
+  }
 
-  const secondLine = JSON.stringify({
-    model: "llama",
+  if (typeof content === "string") {
+    return content;
+  }
+
+  return content
+    .filter((part: MessageContent) => {
+      return part.type === "text" && typeof part.text === "string";
+    })
+    .map((part: MessageContent) => {
+      return part.text || "";
+    })
+    .join("\n");
+}
+
+function toOllamaChunk(
+  model: string,
+  content: string,
+  done: boolean,
+  doneReason?: OllamaCompletionResponse["done_reason"],
+  usage?: CompletionResponse["usage"],
+): OllamaCompletionResponse {
+  return {
+    model,
     created_at: dateToMicroISO(new Date()),
     message: {
-      content: text,
       role: "assistant",
+      content,
     },
-    done: true,
-    done_reason: "stop",
-    // total_duration: 4883583458,
-    // load_duration: 1334875,
-    // prompt_eval_count: 26,
-    // prompt_eval_duration: 342546000,
-    // eval_count: 282,
-    // eval_duration: 4535599000,
-  });
-  return `${secondLine}`;
+    done,
+    done_reason: doneReason,
+    prompt_eval_count: usage?.prompt_tokens,
+    eval_count: usage?.completion_tokens,
+  };
+}
+
+function toOllamaResponse(
+  model: string,
+  openAiResponse: CompletionResponse,
+): OllamaCompletionResponse {
+  const choice = openAiResponse.choices?.[0];
+  const text = extractTextContent(choice?.message?.content);
+
+  return toOllamaChunk(
+    model,
+    text,
+    true,
+    (choice?.finish_reason as OllamaCompletionResponse["done_reason"]) ||
+      "stop",
+    openAiResponse.usage,
+  );
 }
 
 export const ollamaApiRoutes = new Hono();
 
-// Llama-style completions proxy (no streaming)
+// Llama-style completions proxy
 ollamaApiRoutes.post("/api/chat", async (c: Context) => {
+  const start = performance.now();
+
   try {
     const ollamaChatReq = (await c.req.json()) as OllamaChatRequest;
-    const stream = ollamaChatReq.stream || false;
-    logger.info(`/api/chat: ${JSON.stringify(ollamaChatReq)}`);
-    // Map Llama request to Copilot payload
+    const stream = ollamaChatReq.stream !== false;
+    const ollamaModel = getOllamaModelName(ollamaChatReq);
+
+    logger.info(
+      {
+        model: ollamaModel,
+        stream,
+      },
+      "/api/chat",
+    );
+
     const copilotPayload = llamaToCopilotPayload(ollamaChatReq);
     const headers = await getHeaders();
-    // Call Copilot backend
     const upstream = await fetch(
       "https://api.githubcopilot.com/chat/completions",
       { method: "POST", headers, body: JSON.stringify(copilotPayload) },
     );
-    const text = await upstream.text();
+
     if (!upstream.ok) {
+      const text = await upstream.text();
       return c.json(
         { error: { message: text, code: upstream.status } },
         upstream.status as unknown as ContentfulStatusCode,
       );
     }
-    const copilotResp = JSON.parse(text) as CompletionResponse;
-    if (stream) {
-      const ollamaResp = copilotToOllamaStreamResponse(copilotResp);
-      debugPrint(ollamaResp, "OLLAMA");
-      return c.text(ollamaResp, 200, {
-        "Content-Type": "text/event-stream",
+
+    if (!stream) {
+      const text = await upstream.text();
+      const copilotResp = JSON.parse(text) as CompletionResponse;
+      const ollamaResp = toOllamaResponse(ollamaModel, copilotResp);
+      debugPrint(JSON.stringify(ollamaResp, null, 2), "OLLAMA");
+      return c.json(ollamaResp);
+    }
+
+    if (!upstream.body) {
+      return c.json(
+        { error: { message: "Upstream response body is missing", code: 500 } },
+        500 as unknown as ContentfulStatusCode,
+      );
+    }
+
+    const encoder = new TextEncoder();
+    const streamBody = new ReadableStream({
+      async start(controller) {
+        let promptEvalCount: number | undefined;
+        let evalCount = 0;
+        let doneReason: OllamaCompletionResponse["done_reason"] = "stop";
+
+        try {
+          const openAiEvents = events(upstream);
+
+          for await (const rawEvent of openAiEvents) {
+            if (!rawEvent.data) {
+              continue;
+            }
+
+            if (rawEvent.data === "[DONE]") {
+              const finalChunk = toOllamaChunk(
+                ollamaModel,
+                "",
+                true,
+                doneReason,
+                {
+                  prompt_tokens: promptEvalCount,
+                  completion_tokens: evalCount,
+                },
+              );
+              controller.enqueue(
+                encoder.encode(`${JSON.stringify(finalChunk)}\n`),
+              );
+              break;
+            }
+
+            const chunk = JSON.parse(rawEvent.data) as CompletionResponse;
+            const choice = chunk.choices?.[0];
+            const deltaText = choice?.delta?.content || "";
+
+            if (chunk.usage?.prompt_tokens !== undefined) {
+              promptEvalCount = chunk.usage.prompt_tokens;
+            }
+
+            if (chunk.usage?.completion_tokens !== undefined) {
+              evalCount = chunk.usage.completion_tokens;
+            } else if (deltaText) {
+              evalCount += 1;
+            }
+
+            if (choice?.finish_reason) {
+              doneReason =
+                choice.finish_reason as OllamaCompletionResponse["done_reason"];
+            }
+
+            if (!deltaText) {
+              continue;
+            }
+
+            const ollamaChunk = toOllamaChunk(
+              ollamaModel,
+              deltaText,
+              false,
+              undefined,
+              {
+                prompt_tokens: promptEvalCount,
+                completion_tokens: evalCount,
+              },
+            );
+            controller.enqueue(
+              encoder.encode(`${JSON.stringify(ollamaChunk)}\n`),
+            );
+          }
+        } catch (error) {
+          logger.error(error, "ollama stream proxy error");
+          controller.error(error);
+          return;
+        }
+
+        controller.close();
+        logger.info(
+          {
+            model: ollamaModel,
+            durationMs: Math.round(performance.now() - start),
+          },
+          "/api/chat stream complete",
+        );
+      },
+    });
+
+    return new Response(streamBody, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
-      });
-    }
-    return c.json({});
+      },
+    });
   } catch (err: any) {
     logger.error(err);
     return c.json(
