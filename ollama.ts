@@ -2,7 +2,7 @@ import { ContentfulStatusCode } from "hono/utils/http-status";
 import type { ChatCompletionPayload, CompletionResponse } from "./types.ts";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { dateToMicroISO, getHeaders, logger } from "./helper";
+import { dateToMicroISO, debugPrint, getHeaders, logger } from "./helper";
 
 // Simulate Llama-style API for GitHub Copilot
 // https://github.com/ollama/ollama/blob/main/docs/api.md
@@ -100,7 +100,7 @@ ollamaApiRoutes.post("/api/chat", async (c: Context) => {
     const copilotResp = JSON.parse(text) as CompletionResponse;
     if (stream) {
       const ollamaResp = copilotToOllamaStreamResponse(copilotResp);
-      console.info("🤔 ///// ollama.ts @ LINE 116", ollamaResp);
+      debugPrint(ollamaResp, "OLLAMA");
       return c.text(ollamaResp, 200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",

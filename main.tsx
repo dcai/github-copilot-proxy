@@ -7,6 +7,7 @@ import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import { hostname } from "os";
 import {
+  debugPrint,
   findSystemMessageContent,
   findUserMessageContent,
   getHeaders,
@@ -155,10 +156,14 @@ const chatCompletionHandler = async (c: Context) => {
     const visionRequest: boolean = hasImageInRequestBody(payload);
     const stream: boolean = payload?.stream || false;
     const headers = await getHeaders({ visionRequest });
-    console.info("[SYSTEM] Prompt:");
-    console.info(chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"));
-    console.info("[USER] Prompt:");
-    console.info(chalk.red(findUserMessageContent(payload)?.[0]));
+    debugPrint(
+      chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"),
+      "SYSTEM",
+    );
+    debugPrint(
+      chalk.red(findUserMessageContent(payload)?.[0] || "N/A"),
+      "USER",
+    );
 
     const response = await fetch(
       "https://api.githubcopilot.com/chat/completions",
@@ -177,9 +182,10 @@ const chatCompletionHandler = async (c: Context) => {
         json.created = unixts;
         json.object = "chat.completion";
         const answerText = json?.choices?.[0]?.message?.content;
-        console.info("======= BEGIN =======");
-        console.info(chalk.blue(`${answerText || "No message content found"}`));
-        console.info("======== END ========");
+        debugPrint(
+          chalk.blue(`${answerText || "No message content found"}`),
+          "ANSWER",
+        );
         return c.json(json);
       } catch (e) {
         logger.error(
@@ -245,10 +251,14 @@ const responsesHandler = async (c: Context) => {
     const visionRequest: boolean = hasImageInRequestBody(payload);
     const stream: boolean = payload?.stream || false;
     const headers = await getHeaders({ visionRequest });
-    console.info("[SYSTEM] Prompt:");
-    console.info(chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"));
-    console.info("[USER] Prompt:");
-    console.info(chalk.red(findUserMessageContent(payload)?.[0]));
+    debugPrint(
+      chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"),
+      "SYSTEM",
+    );
+    debugPrint(
+      chalk.red(findUserMessageContent(payload)?.[0] || "N/A"),
+      "USER",
+    );
     logger.info(payload.model, "[MODEL]");
 
     const response = await fetch("https://api.githubcopilot.com/responses", {

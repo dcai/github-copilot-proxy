@@ -139,6 +139,34 @@ class TokenManager {
 
 const tokenManager = new TokenManager();
 
+/**
+ * Print a text body to stdout with ASCII fences.
+ * Useful for ad-hoc debug output that stands out in logs.
+ *
+ * @param body The text content to print.
+ * @param title Optional label for the opening fence.
+ */
+export function debugPrint(body: string, title = "DEBUG"): void {
+  const width = 80;
+
+  const centeredFence = (text: string): string => {
+    const inner = ` ${text} `;
+    const padLength = Math.floor((width - inner.length) / 2);
+    const pad = "=".repeat(Math.max(padLength, 0));
+    const result = pad + inner + pad;
+
+    if (result.length < width) {
+      return result + "=".repeat(width - result.length);
+    }
+
+    return result;
+  };
+
+  console.info(centeredFence(title));
+  console.info(body);
+  console.info(centeredFence("END"));
+}
+
 export function shortenText(
   text: string | undefined | null,
   maxLength = 256,
