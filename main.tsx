@@ -54,7 +54,7 @@ if (!process.env.COPILOT_OAUTH_TOKEN) {
 
 app.use("/*", cors(), async (c: Context, next) => {
   const auth = c.req.header("Authorization")?.split(" ")?.[1];
-  console.info(`${c.req.path}: token to verify: ${auth}`);
+  logger.debug(`${c.req.path}: token to verify: ${auth}`);
   return next();
 });
 
