@@ -6,7 +6,7 @@
 
 ```bash
 # Run TypeScript checking to validate all code
-tsc --noEmit
+tsgo --noEmit
 
 # Format code according to project standards
 biome format
