@@ -5,6 +5,7 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
+import { renderToString } from "hono/jsx/dom/server";
 import { hostname } from "os";
 import {
   debugPrint,
@@ -18,6 +19,7 @@ import { ollamaApiRoutes } from "./ollama";
 import type {
   ChatCompletionPayload,
   CompletionResponse,
+  CopilotUsageResponse,
   EmbeddingResponse,
   ModelsListResponse,
   ResponsesPayload,
@@ -67,8 +69,8 @@ const usageHandler = async (c: Context) => {
     method: "GET",
     headers: await getHeaders({ token: process.env.COPILOT_OAUTH_TOKEN }),
   });
-  const usage = await response.json();
-  return c.html(<UsagePage usage={usage} />);
+  const usage = (await response.json()) as CopilotUsageResponse;
+  return c.html(renderToString(<UsagePage usage={usage} />));
 };
 
 app.get("/usage", usageHandler);
@@ -259,7 +261,7 @@ const responsesHandler = async (c: Context) => {
       chalk.red(findUserMessageContent(payload)?.[0] || "N/A"),
       "USER",
     );
-    logger.info(payload.model, "[MODEL]");
+    logger.info({ model: payload.model }, "[MODEL]");
 
     const response = await fetch("https://api.githubcopilot.com/responses", {
       method: "POST",

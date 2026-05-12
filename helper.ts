@@ -1,6 +1,6 @@
 import { join } from "path";
 import pino from "pino";
-import {
+import type {
   ChatCompletionPayload,
   CompletionResponse,
   Message,
@@ -121,7 +121,7 @@ class TokenManager {
     } catch (ex) {
       logger.error(ex, "exception");
       if (ex instanceof Error) {
-        logger.error(ex.message, "response data");
+        logger.error({ responseData: ex.message }, "response data");
       }
     }
   }
@@ -250,7 +250,7 @@ export function makeReadableStream(
         while (true) {
           const { done, value } = await reader.read();
           if (done) {
-            logger.info("stream reader done, closing", "[DONE]");
+            logger.info({ marker: "[DONE]" }, "stream reader done, closing");
             break;
           }
 

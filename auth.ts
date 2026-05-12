@@ -13,7 +13,32 @@ commonHeaders.append("content-type", "application/json");
 commonHeaders.append("user-agent", "GithubCopilot/1.155.0");
 commonHeaders.append("accept-encoding", "gzip,deflate,b");
 
-async function getDeviceCode() {
+type DeviceCodeResponse = {
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+};
+
+type AccessTokenPendingResponse = {
+  error: string;
+  error_description?: string;
+  access_token?: never;
+};
+
+type AccessTokenSuccessResponse = {
+  access_token: string;
+  token_type?: string;
+  scope?: string;
+  error?: never;
+  error_description?: never;
+};
+
+type AccessTokenResponse =
+  | AccessTokenPendingResponse
+  | AccessTokenSuccessResponse;
+
+async function getDeviceCode(): Promise<DeviceCodeResponse> {
   const raw = JSON.stringify({
     "client_id": clientId,
     "scope": "read:user",
@@ -25,16 +50,17 @@ async function getDeviceCode() {
     body: raw,
   };
 
-  const data = await fetch(
+  const response = await fetch(
     "https://github.com/login/device/code",
     requestOptions,
-  )
-    .then((response) => response.json())
-    .catch((error) => console.error(error));
+  );
+  const data = (await response.json()) as DeviceCodeResponse;
   return data;
 }
 
-async function getAccessToken(deviceCode: string) {
+async function getAccessToken(
+  deviceCode: string,
+): Promise<AccessTokenResponse> {
   const raw = JSON.stringify({
     "client_id": clientId,
     "device_code": deviceCode,
@@ -47,12 +73,12 @@ async function getAccessToken(deviceCode: string) {
     body: raw,
   };
 
-  return await fetch(
+  const response = await fetch(
     "https://github.com/login/oauth/access_token",
     requestOptions,
-  )
-    .then((response) => response.json())
-    .catch((error) => console.error(error));
+  );
+  const data = (await response.json()) as AccessTokenResponse;
+  return data;
 }
 
 (async function () {
@@ -63,10 +89,10 @@ async function getAccessToken(deviceCode: string) {
   while (true) {
     await new Promise((resolve) => setTimeout(resolve, 5000));
     const accessToken = await getAccessToken(device_code);
-    if (accessToken.error) {
+    if ("error" in accessToken) {
       console.info(`${accessToken.error}: ${accessToken.error_description}`);
     }
-    if (accessToken.access_token) {
+    if ("access_token" in accessToken) {
       console.info(`access token:\n${JSON.stringify(accessToken, null, 1)}`);
       break;
     }

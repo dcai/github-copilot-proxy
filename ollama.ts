@@ -1,7 +1,7 @@
 import { events } from "fetch-event-stream";
 import { Hono } from "hono";
 import type { Context } from "hono";
-import { ContentfulStatusCode } from "hono/utils/http-status";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { dateToMicroISO, debugPrint, getHeaders, logger } from "./helper";
 import type {
   ChatCompletionPayload,
