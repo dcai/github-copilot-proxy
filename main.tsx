@@ -24,6 +24,7 @@ import type {
   ModelsListResponse,
   ResponsesPayload,
 } from "./types.ts";
+import ModelsPage from "./ModelsPage";
 import UsagePage from "./UsagePage";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
@@ -86,6 +87,9 @@ const modelsHandler = async (c: Context) => {
 };
 app.get("/v1/models", modelsHandler);
 app.get("/models", modelsHandler);
+app.get("/models.html", async (c: Context) => {
+  return c.html(renderToString(<ModelsPage />));
+});
 
 const embeddingsHandler = async (c: Context) => {
   const payload = (await c.req.json()) as {
