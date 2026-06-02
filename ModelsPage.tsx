@@ -18,6 +18,11 @@ export function ModelsPage() {
           .page { width: 100%; padding: 32px; box-sizing: border-box; }
           .status { margin-bottom: 16px; padding: 12px 16px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
           .status.error { color: ${RED}; }
+          .groups { display: grid; gap: 24px; }
+          .group { display: grid; gap: 16px; }
+          .group-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+          .group-title { margin: 0; }
+          .group-count { color: #666; }
           .models { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
           .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 16px; }
           .meta { color: #666; margin-bottom: 8px; }
@@ -42,7 +47,7 @@ export function ModelsPage() {
           <div id="status" class="status">
             Loading models...
           </div>
-          <div id="models" class="models"></div>
+          <div id="models" class="groups"></div>
           <footer>
             <div>
               Raw JSON: <a href="/models">/models</a>
@@ -64,6 +69,34 @@ const escapeHtml = (value) => String(value)
 
 const statusNode = document.getElementById('status');
 const modelsNode = document.getElementById('models');
+
+const groupOrder = ['GPT series', 'Claude series', 'Gemini series', 'Embeddings', 'Others'];
+
+const getModelKey = (model) => {
+  return String(model.name || model.id || '').toLowerCase();
+};
+
+const getGroupName = (model) => {
+  const key = getModelKey(model);
+
+  if (key.includes('embedding')) {
+    return 'Embeddings';
+  }
+
+  if (key.includes('gpt')) {
+    return 'GPT series';
+  }
+
+  if (key.includes('claude')) {
+    return 'Claude series';
+  }
+
+  if (key.includes('gemini')) {
+    return 'Gemini series';
+  }
+
+  return 'Others';
+};
 
 const renderField = ([key, value]) => {
   if (key === 'capabilities') {
@@ -91,6 +124,55 @@ const renderModel = (model) => {
     + '</section>';
 };
 
+const compareModels = (leftModel, rightModel) => {
+  const leftName = String(leftModel.name || leftModel.id || '').toLowerCase();
+  const rightName = String(rightModel.name || rightModel.id || '').toLowerCase();
+
+  return leftName.localeCompare(rightName, undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
+};
+
+const renderGroup = (groupName, models) => {
+  const sortedModels = [...models].sort(compareModels);
+
+  return '<section class="group">'
+    + '<div class="group-header">'
+    + '<h2 class="group-title">' + escapeHtml(groupName) + '</h2>'
+    + '<span class="group-count">' + sortedModels.length + ' model' + (sortedModels.length === 1 ? '' : 's') + '</span>'
+    + '</div>'
+    + '<div class="models">' + sortedModels.map(renderModel).join('') + '</div>'
+    + '</section>';
+};
+
+const shouldHideModel = (model) => {
+  const key = getModelKey(model);
+
+  if (key.includes('4o')) {
+    return true;
+  }
+
+  return false;
+};
+
+const groupModels = (models) => {
+  const visibleModels = models.filter((model) => !shouldHideModel(model));
+  const grouped = visibleModels.reduce((accumulator, model) => {
+    const groupName = getGroupName(model);
+    if (!accumulator[groupName]) {
+      accumulator[groupName] = [];
+    }
+    accumulator[groupName] = accumulator[groupName].concat(model);
+    return accumulator;
+  }, {});
+
+  return groupOrder
+    .filter((groupName) => Array.isArray(grouped[groupName]) && grouped[groupName].length > 0)
+    .map((groupName) => renderGroup(groupName, grouped[groupName]))
+    .join('');
+};
+
 fetch('/models')
   .then((response) => {
     if (!response.ok) {
@@ -105,7 +187,7 @@ fetch('/models')
       modelsNode.innerHTML = '<section class="card"><p>No models found.</p><details><summary>Raw response</summary><pre>' + escapeHtml(JSON.stringify(payload, null, 2)) + '</pre></details></section>';
       return;
     }
-    modelsNode.innerHTML = models.map(renderModel).join('');
+    modelsNode.innerHTML = groupModels(models);
   })
   .catch((error) => {
     statusNode.textContent = 'Failed to load models.';
