@@ -3,8 +3,7 @@ import type {
   CopilotQuotaSnapshot,
   Organization,
 } from "./types";
-
-import { css, Style } from "hono/css";
+import Nav from "./nav";
 
 const BLUE = "#3498db";
 const GREEN = "#568203";
@@ -99,17 +98,10 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
       <head>
         <title>{header}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Style>{css`
-          body { font-family: monospace; max-width: 600px; margin: 40px auto; background: #fafafa; color: #222; }
-          h1 { text-align: center; }
-          section { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 16px; margin-bottom: 24px; }
-          ul { list-style: none; padding: 0; }
-          li { margin-bottom: 4px; }
-          footer { text-align: left; padding: 1em; background: #fff; color: #888; margin-top: 32px; }
-          code {margin-top: 2em;display: block; padding: 1em; background: #fff; color: ${GREEN}; }
-        `}</Style>
+        <link rel="stylesheet" href="/static/styles.css" />
       </head>
-      <body>
+      <body class="usage-page">
+        <Nav />
         <h1>{header}</h1>
         <UsageDetails
           quota={premium}

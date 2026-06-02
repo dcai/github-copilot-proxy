@@ -1,0 +1,144 @@
+/* Shared */
+body {
+  font-family: monospace;
+  margin: 0;
+  background: #fafafa;
+  color: #222;
+  box-sizing: border-box;
+}
+h1 {
+  text-align: center;
+}
+p {
+  line-height: 1.5;
+}
+footer {
+  text-align: left;
+  padding: 1em;
+  background: #fff;
+  color: #888;
+  margin-top: 32px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #0001;
+}
+a {
+  color: #568203;
+}
+
+/* Top navigation */
+.top-nav {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.top-nav a {
+  text-decoration: none;
+  color: #555;
+  font-weight: bold;
+}
+.top-nav a:hover {
+  color: #568203;
+}
+
+/* Models page */
+.models-page {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+.models-page .status {
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #0001;
+  margin-bottom: 24px;
+}
+.models-page .status.error {
+  color: #e74c3c;
+}
+.models-page section {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #0001;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.models-page .group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.models-page .group-header h2 {
+  margin: 0;
+}
+.models-page .group-count {
+  color: #666;
+}
+.models-page .model-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.models-page .model-table th {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  color: #888;
+  font-weight: normal;
+}
+.models-page .model-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+}
+.models-page .model-table td:first-child {
+  font-weight: bold;
+}
+.models-page .model-row:hover {
+  background: #fafafa;
+}
+.models-page details {
+  margin: 0;
+}
+.models-page summary {
+  cursor: pointer;
+  color: #568203;
+}
+.models-page pre {
+  overflow-x: auto;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  font-size: 12px;
+  max-width: 100%;
+}
+
+/* Usage page */
+.usage-page {
+  max-width: 600px;
+  margin: 40px auto;
+}
+.usage-page section {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #0001;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.usage-page ul {
+  list-style: none;
+  padding: 0;
+}
+.usage-page li {
+  margin-bottom: 4px;
+}
+.usage-page code {
+  margin-top: 2em;
+  display: block;
+  padding: 1em;
+  background: #fff;
+  color: #568203;
+}

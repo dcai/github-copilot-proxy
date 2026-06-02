@@ -7,6 +7,9 @@ import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import { renderToString } from "hono/jsx/dom/server";
 import { hostname } from "os";
+import { lookup } from "mime-types";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import {
   debugPrint,
   findSystemMessageContent,
@@ -30,6 +33,7 @@ import UsagePage from "./UsagePage";
 const port: number = Number(process.env.GHC_PORT) || 7890;
 const host: string = process.env.GHC_HOST || "127.0.0.1";
 const app: Hono = new Hono();
+const STATIC_DIR = join(import.meta.dirname, "static");
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -63,6 +67,26 @@ app.use("/*", cors(), async (c: Context, next) => {
 
 app.get("/health", async (c: Context) => {
   return c.text("ok");
+});
+
+app.get("/static/*", async (c: Context) => {
+  const filePath = c.req.path.replace("/static/", "");
+  const fullPath = join(STATIC_DIR, filePath);
+
+  // Prevent directory traversal
+  if (!fullPath.startsWith(STATIC_DIR)) {
+    return c.text("Forbidden", 403);
+  }
+
+  try {
+    const content = await readFile(fullPath);
+    const contentType = lookup(fullPath) || "application/octet-stream";
+    return new Response(content, {
+      headers: { "Content-Type": contentType },
+    });
+  } catch {
+    return c.text("Not found", 404);
+  }
 });
 
 const usageHandler = async (c: Context) => {
