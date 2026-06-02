@@ -30,14 +30,19 @@ const getGroupName = (model) => {
   return "Others";
 };
 
+let modelCounter = 0;
+
 const renderModelRow = (model) => {
+  const id = "model-" + ++modelCounter;
   const name = escapeHtml(model.name || model.id || "Unknown model");
   const version = model.version ? escapeHtml(model.version) : "";
   const modelId = model.id ? escapeHtml(model.id) : "";
   const rawJson = escapeHtml(JSON.stringify(model, null, 2));
 
   return (
-    '<tr class="model-row">' +
+    '<tr class="model-row" data-target="' +
+    id +
+    '">' +
     "<td>" +
     name +
     "</td>" +
@@ -47,11 +52,16 @@ const renderModelRow = (model) => {
     "<td>" +
     version +
     "</td>" +
-    "<td>" +
-    "<details><summary>Details</summary><pre>" +
+    '<td><a class="toggle-btn" data-target="' +
+    id +
+    '">Details</a></td>' +
+    "</tr>" +
+    '<tr class="json-row" id="' +
+    id +
+    '" hidden>' +
+    '<td colspan="4"><pre>' +
     rawJson +
-    "</pre></details>" +
-    "</td>" +
+    "</pre></td>" +
     "</tr>"
   );
 };
@@ -118,6 +128,18 @@ const groupModels = (models) => {
     .join("");
 };
 
+// Click handler: toggle JSON row from any trigger with data-target
+modelsNode.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-target]");
+  if (!trigger) return;
+
+  const targetId = trigger.getAttribute("data-target");
+  const jsonRow = document.getElementById(targetId);
+  if (jsonRow) {
+    jsonRow.hidden = !jsonRow.hidden;
+  }
+});
+
 fetch("/models")
   .then((response) => {
     if (!response.ok) {
@@ -127,6 +149,7 @@ fetch("/models")
   })
   .then((payload) => {
     const models = Array.isArray(payload?.data) ? payload.data : [];
+    modelCounter = 0;
     statusNode.textContent =
       "Loaded " +
       models.length +

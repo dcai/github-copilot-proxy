@@ -103,9 +103,17 @@ a {
 .models-page details {
   margin: 0;
 }
-.models-page summary {
+.models-page .toggle-btn {
   cursor: pointer;
   color: #568203;
+  text-decoration: none;
+}
+.models-page .toggle-btn:hover {
+  text-decoration: underline;
+}
+.models-page .json-row td {
+  padding: 0 12px 12px;
+  max-width: 0;
 }
 .models-page pre {
   overflow-x: auto;
@@ -113,7 +121,7 @@ a {
   background: #f5f5f5;
   border-radius: 8px;
   font-size: 12px;
-  max-width: 100%;
+  white-space: pre;
 }
 
 /* Usage page */
