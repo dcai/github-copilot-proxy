@@ -275,6 +275,27 @@ const chatCompletionHandler = async (c: Context) => {
     return c.json({ error: `something bad happened: ${String(err)}` }, 500);
   }
 };
+
+function debugResponseStream(
+  body: ReadableStream<Uint8Array>,
+): ReadableStream<Uint8Array> {
+  const decoder = new TextDecoder();
+  let output = "";
+
+  return body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        output += decoder.decode(chunk, { stream: true });
+        controller.enqueue(chunk);
+      },
+      flush() {
+        output += decoder.decode();
+        debugPrint(chalk.blue(output), "RESPONSE OUTPUT");
+      },
+    }),
+  );
+}
+
 const responsesHandler = async (c: Context) => {
   try {
     // Responses requests are deliberately passed through unchanged. The
@@ -309,6 +330,7 @@ const responsesHandler = async (c: Context) => {
     if (payload.stream) {
       if (!response.ok) {
         const text = await response.text();
+        debugPrint(chalk.blue(text), "RESPONSE OUTPUT");
         return c.json(
           {
             error: "GitHub Copilot Responses API request failed",
@@ -318,18 +340,22 @@ const responsesHandler = async (c: Context) => {
         );
       }
 
-      return new Response(response.body, {
-        status: response.status,
-        headers: {
-          "content-type":
-            response.headers.get("content-type") || "text/event-stream",
-          "cache-control": "no-cache",
-          connection: "keep-alive",
+      return new Response(
+        response.body ? debugResponseStream(response.body) : null,
+        {
+          status: response.status,
+          headers: {
+            "content-type":
+              response.headers.get("content-type") || "text/event-stream",
+            "cache-control": "no-cache",
+            connection: "keep-alive",
+          },
         },
-      });
+      );
     }
 
     const text = await response.text();
+    debugPrint(chalk.blue(text), "RESPONSE OUTPUT");
     if (!response.ok) {
       return c.json(
         {
