@@ -276,21 +276,102 @@ const chatCompletionHandler = async (c: Context) => {
   }
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractResponseOutputText(response: unknown): string {
+  if (!isRecord(response) || !Array.isArray(response.output)) {
+    return "";
+  }
+
+  return response.output
+    .filter(isRecord)
+    .flatMap((output) =>
+      Array.isArray(output.content) ? output.content.filter(isRecord) : [],
+    )
+    .filter(
+      (content) =>
+        content.type === "output_text" && typeof content.text === "string",
+    )
+    .map((content) => content.text)
+    .join("");
+}
+
+function extractStreamOutputText(events: unknown[]): string {
+  let completedOutput = "";
+  let completedText = "";
+  let deltas = "";
+
+  for (const event of events) {
+    if (!isRecord(event)) {
+      continue;
+    }
+
+    if (isRecord(event.response)) {
+      const output = extractResponseOutputText(event.response);
+      if (output) {
+        completedOutput = output;
+      }
+    }
+
+    if (
+      event.type === "response.output_text.done" &&
+      typeof event.text === "string"
+    ) {
+      completedText = event.text;
+    }
+
+    if (
+      event.type === "response.output_text.delta" &&
+      typeof event.delta === "string"
+    ) {
+      deltas += event.delta;
+    }
+  }
+
+  return completedOutput || completedText || deltas;
+}
+
+function debugResponseOutput(body: string, streaming = false): void {
+  const eventBodies = streaming
+    ? body.split(/\r?\n\r?\n/).map((event) =>
+        event
+          .split(/\r?\n/)
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice("data:".length).trimStart())
+          .join("\n"),
+      )
+    : [body];
+  const parsedBodies = eventBodies.flatMap((eventBody) => {
+    try {
+      return [JSON.parse(eventBody) as unknown];
+    } catch {
+      return [];
+    }
+  });
+  const output = streaming
+    ? extractStreamOutputText(parsedBodies)
+    : extractResponseOutputText(parsedBodies[0]);
+
+  debugPrint(chalk.blue(output || "No output text found"), "RESPONSE OUTPUT");
+}
+
 function debugResponseStream(
   body: ReadableStream<Uint8Array>,
 ): ReadableStream<Uint8Array> {
   const decoder = new TextDecoder();
-  let output = "";
+  let responseBody = "";
 
   return body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
       transform(chunk, controller) {
-        output += decoder.decode(chunk, { stream: true });
+        responseBody += decoder.decode(chunk, { stream: true });
         controller.enqueue(chunk);
       },
       flush() {
-        output += decoder.decode();
-        debugPrint(chalk.blue(output), "RESPONSE OUTPUT");
+        responseBody += decoder.decode();
+        debugResponseOutput(responseBody, true);
       },
     }),
   );
@@ -330,7 +411,7 @@ const responsesHandler = async (c: Context) => {
     if (payload.stream) {
       if (!response.ok) {
         const text = await response.text();
-        debugPrint(chalk.blue(text), "RESPONSE OUTPUT");
+        debugPrint(chalk.blue(text), "RESPONSE ERROR");
         return c.json(
           {
             error: "GitHub Copilot Responses API request failed",
@@ -355,8 +436,8 @@ const responsesHandler = async (c: Context) => {
     }
 
     const text = await response.text();
-    debugPrint(chalk.blue(text), "RESPONSE OUTPUT");
     if (!response.ok) {
+      debugPrint(chalk.blue(text), "RESPONSE ERROR");
       return c.json(
         {
           error: "GitHub Copilot Responses API request failed",
@@ -366,6 +447,7 @@ const responsesHandler = async (c: Context) => {
       );
     }
 
+    debugResponseOutput(text);
     return new Response(text, {
       status: response.status,
       headers: { "content-type": "application/json" },
