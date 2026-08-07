@@ -277,27 +277,75 @@ const chatCompletionHandler = async (c: Context) => {
 };
 const responsesHandler = async (c: Context) => {
   try {
+    // Responses requests are deliberately passed through unchanged. The
+    // Responses API has a different event and output schema than chat
+    // completions, so converting it to the old API would lose information
+    // (tool calls, reasoning items, annotations, and output_text).
     const payload = (await c.req.json()) as ResponsesPayload;
-    const visionRequest: boolean = hasImageInRequestBody(payload);
-    const stream: boolean = payload?.stream || false;
-    const headers = await getHeaders({ visionRequest });
-    debugPrint(
-      chalk.green(findSystemMessageContent(payload)?.[0] || "N/A"),
-      "SYSTEM",
+    const headers = await getHeaders();
+    logger.info(
+      { model: payload.model, stream: payload.stream },
+      "[RESPONSES]",
     );
+    debugPrint(chalk.green(payload.instructions || "N/A"), "INSTRUCTIONS");
     debugPrint(
-      chalk.red(findUserMessageContent(payload)?.[0] || "N/A"),
-      "USER",
+      chalk.red(
+        typeof payload.input === "string"
+          ? payload.input
+          : JSON.stringify(payload.input, null, 2),
+      ),
+      "INPUT",
     );
-    logger.info({ model: payload.model }, "[MODEL]");
 
     const response = await fetch("https://api.githubcopilot.com/responses", {
       method: "POST",
       headers,
       body: JSON.stringify(payload),
     });
+
+    // Keep the upstream SSE stream intact. In particular, do not use the
+    // chat-completions event parser here: response.created, response.output
+    // and response.completed are Responses API events.
+    if (payload.stream) {
+      if (!response.ok) {
+        const text = await response.text();
+        return c.json(
+          {
+            error: "GitHub Copilot Responses API request failed",
+            upstream: { status: response.status, text },
+          },
+          response.status as 400,
+        );
+      }
+
+      return new Response(response.body, {
+        status: response.status,
+        headers: {
+          "content-type":
+            response.headers.get("content-type") || "text/event-stream",
+          "cache-control": "no-cache",
+          connection: "keep-alive",
+        },
+      });
+    }
+
+    const text = await response.text();
+    if (!response.ok) {
+      return c.json(
+        {
+          error: "GitHub Copilot Responses API request failed",
+          upstream: { status: response.status, text },
+        },
+        response.status as 400,
+      );
+    }
+
+    return new Response(text, {
+      status: response.status,
+      headers: { "content-type": "application/json" },
+    });
   } catch (err) {
-    logger.error(err);
+    logger.error(err, "Responses API proxy error");
     return c.json({ error: `something bad happened: ${String(err)}` }, 500);
   }
 };

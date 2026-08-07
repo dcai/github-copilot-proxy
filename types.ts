@@ -32,9 +32,14 @@ export interface ChatCompletionPayload {
 
 export interface ResponsesPayload {
   model: string;
-  input: string;
-  instructions: string;
+  input: string | Array<Record<string, unknown>>;
+  instructions?: string;
   stream?: boolean;
+  temperature?: number;
+  max_output_tokens?: number;
+  tools?: Array<Record<string, unknown>>;
+  tool_choice?: string | Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export type FilterType = {
