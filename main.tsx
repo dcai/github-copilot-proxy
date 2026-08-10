@@ -115,6 +115,39 @@ app.get("/models.html", async (c: Context) => {
   return c.html(renderToString(<ModelsPage />));
 });
 
+function upstreamErrorResponse(response: Response, body: string): Response {
+  debugPrint(
+    chalk.blue(body || "GitHub Copilot returned an empty error response."),
+    "UPSTREAM ERROR",
+  );
+  logger.warn(
+    {
+      status: response.status,
+      statusText: response.statusText,
+      body,
+    },
+    "Upstream request failed",
+  );
+
+  return new Response(
+    body ||
+      JSON.stringify({
+        error: {
+          message: "GitHub Copilot returned an empty error response.",
+          type: "upstream_error",
+          code: "upstream_request_failed",
+        },
+      }),
+    {
+      status: response.status,
+      headers: {
+        "content-type":
+          response.headers.get("content-type") || "application/json",
+      },
+    },
+  );
+}
+
 const embeddingsHandler = async (c: Context) => {
   const payload = (await c.req.json()) as {
     input: string | string[];
@@ -204,6 +237,10 @@ const chatCompletionHandler = async (c: Context) => {
       },
     );
 
+    if (!response.ok) {
+      return upstreamErrorResponse(response, await response.text());
+    }
+
     if (!stream) {
       const text = await response.text();
       try {
@@ -241,11 +278,6 @@ const chatCompletionHandler = async (c: Context) => {
     // END of non-streaming response
 
     return streamSSE(c, async (stream) => {
-      if (!response.ok) {
-        console.error("Upstream error", response.status, response.statusText);
-        console.error(await response.text());
-        return;
-      }
       const openaiEvents = events(response);
       for await (const rawEvent of openaiEvents) {
         if (rawEvent.data === "[DONE]") {
@@ -410,15 +442,7 @@ const responsesHandler = async (c: Context) => {
     // and response.completed are Responses API events.
     if (payload.stream) {
       if (!response.ok) {
-        const text = await response.text();
-        debugPrint(chalk.blue(text), "RESPONSE ERROR");
-        return c.json(
-          {
-            error: "GitHub Copilot Responses API request failed",
-            upstream: { status: response.status, text },
-          },
-          response.status as 400,
-        );
+        return upstreamErrorResponse(response, await response.text());
       }
 
       return new Response(
@@ -437,14 +461,7 @@ const responsesHandler = async (c: Context) => {
 
     const text = await response.text();
     if (!response.ok) {
-      debugPrint(chalk.blue(text), "RESPONSE ERROR");
-      return c.json(
-        {
-          error: "GitHub Copilot Responses API request failed",
-          upstream: { status: response.status, text },
-        },
-        response.status as 400,
-      );
+      return upstreamErrorResponse(response, text);
     }
 
     debugResponseOutput(text);
