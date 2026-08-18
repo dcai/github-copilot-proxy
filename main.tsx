@@ -497,5 +497,6 @@ logger.info(
 
 export default {
   port,
+  hostname: host,
   fetch: app.fetch,
 };
