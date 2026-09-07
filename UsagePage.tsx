@@ -16,6 +16,8 @@ function ProgressBar({
   percent: number;
   unlimited?: boolean;
 }) {
+  const percentage = `${percent.toFixed(2)}%`;
+  const progressLabel = unlimited ? "Unlimited" : `${percentage}`;
   const centerStyle = {
     color: "#fff",
     display: "flex",
@@ -28,12 +30,21 @@ function ProgressBar({
     borderRadius: "8px",
     height: "24px",
     marginBottom: "8px",
+    cursor: "help",
     ...(unlimited && centerStyle),
   };
   return (
-    <div style={outerStyle}>
+    <div
+      style={outerStyle}
+      title={progressLabel}
+      aria-label={progressLabel}
+      role="progressbar"
+      aria-valuenow={unlimited ? undefined : percent}
+      aria-valuemin={unlimited ? undefined : 0}
+      aria-valuemax={unlimited ? undefined : 100}
+    >
       {unlimited ? (
-        "Unlimited"
+        progressLabel
       ) : (
         <div
           style={{
@@ -42,10 +53,12 @@ function ProgressBar({
             height: "100%",
             borderRadius: "8px",
             transition: "width 0.3s",
+            fontSize: percent < 15 ? "70%" : "inherit",
+            whiteSpace: "nowrap",
             ...centerStyle,
           }}
         >
-          {unlimited ? "" : `${percent.toFixed(2)}% used`}
+          {progressLabel}
         </div>
       )}
     </div>
