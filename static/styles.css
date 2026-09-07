@@ -267,6 +267,7 @@ pre {
   border-radius: 6px;
   background: #e2e8f0;
   cursor: help;
+  font-size: 60%;
 }
 
 .progress-bar.is-unlimited {
