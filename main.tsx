@@ -118,12 +118,11 @@ app.get("/models", modelsHandler);
 app.get("/models.html", async (c: Context) => {
   return c.html(renderToString(<ModelsPage />));
 });
-app.get("/pricing", async (c: Context) => {
+const pricingPageHandler = async (c: Context) => {
   return c.html(renderToString(<PricingPage />));
-});
-app.get("/pricing.html", async (c: Context) => {
-  return c.html(renderToString(<PricingPage />));
-});
+};
+app.get("/pricing", pricingPageHandler);
+app.get("/pricing.html", pricingPageHandler);
 
 function upstreamErrorResponse(response: Response, body: string): Response {
   debugPrint(

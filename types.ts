@@ -100,33 +100,6 @@ export interface SentryBreadcrumbData {
   [key: string]: unknown;
 }
 
-// ollama.ts
-export type OllamaMessage = {
-  content: string;
-  role: "user" | "assistant" | "system";
-};
-
-export interface OllamaChatRequest {
-  messages: OllamaMessage[];
-  stream: boolean;
-  model: string;
-}
-
-export interface OllamaCompletionResponse {
-  model: string;
-  created?: string;
-  message?: OllamaMessage;
-  messages?: OllamaMessage[];
-  done: boolean;
-  done_reason: "stop" | "length" | "content_filter" | "tool_use";
-  total_duration?: number;
-  load_duration?: number;
-  prompt_eval_count?: number;
-  prompt_eval_duration?: number;
-  eval_count?: number;
-  eval_duration?: number;
-}
-
 export type CopilotQuotaSnapshot = {
   entitlement: number;
   overage_count: number;

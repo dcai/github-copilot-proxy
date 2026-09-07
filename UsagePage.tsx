@@ -3,11 +3,7 @@ import type {
   CopilotQuotaSnapshot,
   Organization,
 } from "./types";
-import Nav from "./nav";
-
-const BLUE = "#3498db";
-const GREEN = "#568203";
-const RED = "#e74c3c";
+import PageLayout from "./PageLayout";
 
 function ProgressBar({
   unlimited,
@@ -18,24 +14,9 @@ function ProgressBar({
 }) {
   const percentage = `${percent.toFixed(2)}%`;
   const progressLabel = unlimited ? "Unlimited" : `${percentage}`;
-  const centerStyle = {
-    color: "#fff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
-  const outerStyle = {
-    width: "100%",
-    background: unlimited ? BLUE : "#eee",
-    borderRadius: "8px",
-    height: "24px",
-    marginBottom: "8px",
-    cursor: "help",
-    ...(unlimited && centerStyle),
-  };
   return (
     <div
-      style={outerStyle}
+      class={`progress-bar ${unlimited ? "is-unlimited" : ""}`}
       title={progressLabel}
       aria-label={progressLabel}
       role="progressbar"
@@ -47,15 +28,9 @@ function ProgressBar({
         progressLabel
       ) : (
         <div
+          class={`progress-value ${percent > 90 ? "is-critical" : ""}`}
           style={{
             width: `${percent}%`,
-            background: percent > 90 ? RED : GREEN,
-            height: "100%",
-            borderRadius: "8px",
-            transition: "width 0.3s",
-            fontSize: percent < 15 ? "70%" : "inherit",
-            whiteSpace: "nowrap",
-            ...centerStyle,
           }}
         >
           {progressLabel}
@@ -75,7 +50,7 @@ function UsageDetails({
   quotaResetDate?: string;
 }) {
   return (
-    <section style={{ marginBottom: "24px" }}>
+    <section class="card usage-card">
       <h2>{label}</h2>
       <ProgressBar
         unlimited={quota.unlimited}
@@ -107,15 +82,17 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
   const header = "Copilot Usage Details";
 
   return (
-    <html lang="en">
-      <head>
-        <title>{header}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="stylesheet" href="/static/styles.css" />
-      </head>
-      <body class="usage-page">
-        <Nav />
-        <h1>{header}</h1>
+    <PageLayout title={header} currentPage="usage">
+      <header class="page-heading">
+        <div>
+          <p class="eyebrow">Account overview</p>
+          <h1>{header}</h1>
+          <p class="page-description">
+            Current Copilot allowance and renewal information.
+          </p>
+        </div>
+      </header>
+      <div class="usage-grid">
         <UsageDetails
           quota={premium}
           label="Premium Requests"
@@ -123,23 +100,24 @@ export function UsagePage({ usage }: { usage: CopilotUsageResponse }) {
         />
         <UsageDetails quota={chat} label="Chat" />
         <UsageDetails quota={completions} label="Completions" />
-        <footer>
-          <div>Quota resets: {usage.quota_reset_date}</div>
-          <div>Plan: {usage.copilot_plan}</div>
-          {usage.organization_list?.length > 0 && (
-            <div>
-              Organizations:{" "}
-              {usage.organization_list
-                ?.map((org: Organization) => org?.name)
-                .join(", ")}
-            </div>
-          )}
-        </footer>
-        <code>
-          <pre>{JSON.stringify(usage, null, 2)}</pre>
-        </code>
-      </body>
-    </html>
+      </div>
+      <footer class="card usage-footer">
+        <div>Quota resets: {usage.quota_reset_date}</div>
+        <div>Plan: {usage.copilot_plan}</div>
+        {usage.organization_list?.length > 0 && (
+          <div>
+            Organizations:{" "}
+            {usage.organization_list
+              ?.map((org: Organization) => org?.name)
+              .join(", ")}
+          </div>
+        )}
+      </footer>
+      <details class="raw-data">
+        <summary>View raw usage data</summary>
+        <pre>{JSON.stringify(usage, null, 2)}</pre>
+      </details>
+    </PageLayout>
   );
 }
 

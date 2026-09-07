@@ -1,10 +1,4 @@
-const escapeHtml = (value) =>
-  String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+import { escapeHtml, loadModels, pluralize } from "./ui.js";
 
 const statusNode = document.getElementById("status");
 const modelsNode = document.getElementById("models");
@@ -23,10 +17,18 @@ const getModelKey = (model) => {
 
 const getGroupName = (model) => {
   const key = getModelKey(model);
-  if (key.includes("embedding")) return "Embeddings";
-  if (key.includes("gpt")) return "GPT series";
-  if (key.includes("claude")) return "Claude series";
-  if (key.includes("gemini")) return "Gemini series";
+  if (key.includes("embedding")) {
+    return "Embeddings";
+  }
+  if (key.includes("gpt")) {
+    return "GPT series";
+  }
+  if (key.includes("claude")) {
+    return "Claude series";
+  }
+  if (key.includes("gemini")) {
+    return "Gemini series";
+  }
   return "Others";
 };
 
@@ -52,9 +54,9 @@ const renderModelRow = (model) => {
     "<td>" +
     version +
     "</td>" +
-    '<td><a class="toggle-btn" data-target="' +
+    '<td><button class="toggle-btn" type="button" data-target="' +
     id +
-    '">Details</a></td>' +
+    '">Details</button></td>' +
     "</tr>" +
     '<tr class="json-row" id="' +
     id +
@@ -87,9 +89,7 @@ const renderGroup = (groupName, models) => {
     escapeHtml(groupName) +
     "</h2>" +
     '<span class="group-count">' +
-    sortedModels.length +
-    " model" +
-    (sortedModels.length === 1 ? "" : "s") +
+    pluralize(sortedModels.length, "model") +
     "</span>" +
     "</div>" +
     '<table class="model-table">' +
@@ -104,7 +104,9 @@ const renderGroup = (groupName, models) => {
 
 const shouldHideModel = (model) => {
   const key = getModelKey(model);
-  if (key.includes("4o")) return true;
+  if (key.includes("4o")) {
+    return true;
+  }
   return false;
 };
 
@@ -131,7 +133,9 @@ const groupModels = (models) => {
 // Click handler: toggle JSON row from any trigger with data-target
 modelsNode.addEventListener("click", (event) => {
   const trigger = event.target.closest("[data-target]");
-  if (!trigger) return;
+  if (!trigger) {
+    return;
+  }
 
   const targetId = trigger.getAttribute("data-target");
   const jsonRow = document.getElementById(targetId);
@@ -140,22 +144,11 @@ modelsNode.addEventListener("click", (event) => {
   }
 });
 
-fetch("/models")
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error("Request failed with status " + response.status);
-    }
-    return response.json();
-  })
-  .then((payload) => {
-    const models = Array.isArray(payload?.data) ? payload.data : [];
+async function initialiseModels() {
+  try {
+    const { models, payload } = await loadModels();
     modelCounter = 0;
-    statusNode.textContent =
-      "Loaded " +
-      models.length +
-      " model" +
-      (models.length === 1 ? "" : "s") +
-      ".";
+    statusNode.textContent = `Loaded ${pluralize(models.length, "model")}.`;
     if (models.length === 0) {
       modelsNode.innerHTML =
         "<p>No models found.</p><details><summary>Raw response</summary><pre>" +
@@ -164,10 +157,12 @@ fetch("/models")
       return;
     }
     modelsNode.innerHTML = groupModels(models);
-  })
-  .catch((error) => {
+  } catch (error) {
     statusNode.textContent = "Failed to load models.";
     statusNode.classList.add("error");
     modelsNode.innerHTML =
       "<p>" + escapeHtml(error.message || String(error)) + "</p>";
-  });
+  }
+}
+
+initialiseModels();

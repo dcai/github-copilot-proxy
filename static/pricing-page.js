@@ -1,10 +1,4 @@
-const escapeHtml = (value) =>
-  String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+import { escapeHtml, loadModels, pluralize } from "./ui.js";
 
 const searchNode = document.getElementById("pricing-search");
 const providerNode = document.getElementById("pricing-provider");
@@ -306,24 +300,21 @@ const populateProviders = () => {
   node.addEventListener("change", render);
 });
 
-fetch("/models")
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error("Request failed with status " + response.status);
-    }
-    return response.json();
-  })
-  .then((payload) => {
-    models = Array.isArray(payload?.data) ? payload.data : [];
+async function initialisePricing() {
+  try {
+    const loaded = await loadModels();
+    models = loaded.models;
     populateProviders();
-    statusNode.textContent = `Updated from the live Copilot model catalog.`;
+    statusNode.textContent = `Updated from the live Copilot model catalog: ${pluralize(models.length, "model")}.`;
     render();
-  })
-  .catch((error) => {
+  } catch (error) {
     statusNode.textContent = "Failed to load pricing.";
     statusNode.classList.add("error");
     summaryNode.textContent = "";
     modelsNode.innerHTML = `<tr><td colspan="7" class="empty-state">${escapeHtml(
       error.message || String(error),
     )}</td></tr>`;
-  });
+  }
+}
+
+initialisePricing();

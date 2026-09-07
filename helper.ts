@@ -3,7 +3,9 @@ import pino from "pino";
 import type {
   ChatCompletionPayload,
   CompletionResponse,
+  GetHeadersOptions,
   Message,
+  SentryBreadcrumbData,
   TokenResponse,
 } from "./types";
 
@@ -49,11 +51,6 @@ export function msToTime(ms: number): string {
     (seconds ? seconds + "s " : "") +
     (milliseconds ? milliseconds + "ms" : "")
   ).trim();
-}
-
-interface GetHeadersOptions {
-  token?: string | null;
-  visionRequest?: boolean;
 }
 
 export async function getHeaders({
@@ -229,9 +226,7 @@ export function hasImageInRequestBody(payload: ChatCompletionPayload): boolean {
   return false;
 }
 
-export interface SentryBreadcrumbData {
-  [key: string]: unknown;
-}
+export type { SentryBreadcrumbData } from "./types";
 
 export function addBreadcrumb(Sentry: any, obj: SentryBreadcrumbData): void {
   if (!process.env.SENTRY_DSN) {
