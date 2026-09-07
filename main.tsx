@@ -28,6 +28,7 @@ import type {
   ResponsesPayload,
 } from "./types.ts";
 import ModelsPage from "./ModelsPage";
+import PricingPage from "./PricingPage";
 import UsagePage from "./UsagePage";
 
 const port: number = Number(process.env.GHC_PORT) || 7890;
@@ -104,7 +105,10 @@ app.get("/", usageHandler);
 const modelsHandler = async (c: Context) => {
   const response = await fetch("https://api.githubcopilot.com/models", {
     method: "GET",
-    headers: await getHeaders(),
+    headers: {
+      ...(await getHeaders()),
+      "X-GitHub-Api-Version": "2026-08-01",
+    },
   });
   logger.info(`fetched models`);
   return c.json((await response.json()) as ModelsListResponse);
@@ -113,6 +117,12 @@ app.get("/v1/models", modelsHandler);
 app.get("/models", modelsHandler);
 app.get("/models.html", async (c: Context) => {
   return c.html(renderToString(<ModelsPage />));
+});
+app.get("/pricing", async (c: Context) => {
+  return c.html(renderToString(<PricingPage />));
+});
+app.get("/pricing.html", async (c: Context) => {
+  return c.html(renderToString(<PricingPage />));
 });
 
 function upstreamErrorResponse(response: Response, body: string): Response {
